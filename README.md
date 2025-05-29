@@ -1,5 +1,6 @@
 This is a simple Gomoku_start interface.
 Only need pygame and numpy to run.
+项目结构:
 Gomoku_ai_integrate/
 ├── main.py              # 主程序入口
 ├── game.py              # 游戏主类

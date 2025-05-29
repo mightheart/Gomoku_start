@@ -8,3 +8,4 @@ Gomoku_ai_integrate/
 ├── config_4.py          # AI配置
 └── data/
     └── background.jpg   # 资源文件
+歪比巴卜

@@ -182,7 +182,7 @@ class GameUI:
         screen.blit(undo_text, (SCREEN_WIDTH - 220, 70))
         screen.blit(redo_text, (SCREEN_WIDTH - 220, 100))
         
-        # 显示思考状态
+        ## 显示思考状态
         if ai_thinking and winner == 0 and current_player != player_side:
             thinking_text = self.font_small.render("AI思考中...", True, RED)
             screen.blit(thinking_text, (50, 50))

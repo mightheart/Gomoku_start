@@ -5,6 +5,13 @@ import pygame
 import os
 from constants import *
 
+
+def set_working_directory():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(current_dir)
+    
+set_working_directory()
+
 def load_background_image():
     """加载背景图片"""
     try:

@@ -238,9 +238,12 @@ class GobangGame:
 
         # 加载背景图片
         try:
-            self.background_image = pygame.image.load("background.jpg")
+            # join方法表示路径
+            background_path = os.path.join("data", "background1.jpg")
+            self.background_image = pygame.image.load(background_path)
             self.background_image = pygame.transform.scale(self.background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
-        except:
+        except Exception as e:
+            print(f"背景图片加载失败: {e}")
             self.background_image = None
 
         # 初始化字体 - 使用第一个代码的字体

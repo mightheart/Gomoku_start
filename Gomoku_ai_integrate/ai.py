@@ -39,18 +39,66 @@ def check_win_all(board_inner):
             check_win(board_d)]
 
 def value(board_inner, temp_list, value_model, chr):
-    """评估棋型价值"""
     score = 0
     num = 0
     for list_str in board_inner:
-        str_line = ''.join(list_str)
-        for key in value_model:
-            for pattern_name, (pattern, pattern_score) in value_model[key]:
-                count = str_line.count(pattern)
-                if count > 0:
-                    temp_list.append((num, (pattern_name, pattern, pattern_score), count))
-                    score += pattern_score * count
-        num += 1
+        if ''.join(list_str).count(chr) < 2:
+            continue
+        a = 0
+        for i in range(11):
+            if a == 0:
+                temp = []
+                for j in range(5, 12):
+                    if i + j > len(list_str):
+                        break
+                    num += 1
+                    s = ''.join(list_str[i:i + j])
+                    s_num = min(s.count(chr), 5)
+                    if s_num < 2:
+                        continue
+                    else:
+                        if i == 0:
+                            for k in [t for _ in value_model[0].items() for t in _[1] if int(_[0]) <= s_num]:
+                                if s == k[1][0]:
+                                    temp.append((i, k))
+                        else:
+                            if i + j < len(list_str):
+                                for k in [t for _ in value_model[1].items() for t in _[1] if int(_[0]) <= s_num]:
+                                    if s == k[1][0]:
+                                        temp.append((i, k))
+                            elif i + j == len(list_str):
+                                for k in [t for _ in value_model[2].items() for t in _[1] if int(_[0]) <= s_num]:
+                                    if s == k[1][0]:
+                                        temp.append((i, k))
+            else:
+                a -= 1
+                temp = []
+            if temp:
+                max_value = max([i[1][1][1] for i in temp])
+                max_shape = [i for i in temp if i[1][1][1] == max_value][0]
+                if max_shape[1][0] in ['4_1_e', '4_1_1',
+                                       '4_2_5', '4_2_6', '4_2_7', '4_2_8_e', '4_2_9',
+                                       '4_3_4_s',
+                                       '3p_0', '3p_0_1',
+                                       '3p_1_3', '3_1_4_e', '3_1_5',
+                                       '3_2_5_s',
+                                       '3_3', '3_3_1', '3_3_2_e', '3_3_3',
+                                       '2_0_5',
+                                       '2_1',
+                                       '2_2_1', '2_2_2_e', '2_2_3']:
+                    a = 1
+                elif max_shape[1][0] in ['4_2_1', '4_2_2', '4_2_3_e', '4_2_4',
+                                         '4_3', '4_3_8', '4_3_9',
+                                         '3p_1', '3_1_1_e', '3_1_2',
+                                         '2_0',
+                                         '2_2']:
+                    a = 2
+                elif max_shape[1][0] in ['3p_2']:
+                    a = 3
+                elif max_shape[1][0] in ['4_2']:
+                    a = 5
+                temp_list.append(max_shape)
+                score += max_value
     return score
 
 def additional(te_list):

@@ -18,7 +18,7 @@ Gomoku_ai_integrate/
     └──  # 字体文件
 ```
 
-### 文件说明
+### 📃文件说明
 
 - **main.py** - 启动游戏
 - **game.py** - 包含游戏主类 `GobangGame`，处理游戏逻辑

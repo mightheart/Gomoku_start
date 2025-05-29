@@ -51,7 +51,7 @@ def check_winner_at_position(board, row, col):
     ]
 
     for dr, dc in directions:
-        count = 1  # 包括当前棋子
+        count = 1  ## 包括当前棋子
         
         # 向一个方向计数
         r, c = row + dr, col + dc

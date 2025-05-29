@@ -14,6 +14,8 @@ Gomoku_ai_integrate/
 ├── config_4.py          # AI配置
 └── data/
     └──  # 资源文件
+└── font/
+    └──  # 字体文件
 ```
 
 ### 文件说明
@@ -26,3 +28,4 @@ Gomoku_ai_integrate/
 - **constants.py** - 游戏常量定义，如颜色、尺寸等
 - **config_4.py** - AI配置文件，包含棋型评估模型
 - **data/** - 资源文件目录
+- **font/** - 字体文件目录

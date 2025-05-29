@@ -37,87 +37,58 @@ def load_fonts():
     
     return font_large, font_medium, font_small
 
-def check_winner_at_position(board, row, col):
-    """检查指定位置是否形成获胜"""
+def check_winner_at_position(board, row, col, board_size):
     player = board[row][col]
     if player == PIECE_EMPTY:
         return False
-
     directions = [
-        (0, 1),   # 水平
-        (1, 0),   # 垂直
-        (1, 1),   # 主对角线
-        (1, -1)   # 副对角线
+        (0, 1), (1, 0), (1, 1), (1, -1)
     ]
-
     for dr, dc in directions:
-        count = 1  ## 包括当前棋子
-        
-        # 向一个方向计数
+        count = 1
         r, c = row + dr, col + dc
-        while (0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and 
+        while (0 <= r < board_size and 0 <= c < board_size and 
                board[r][c] == player):
             count += 1
             r, c = r + dr, c + dc
-        
-        # 向相反方向计数
         r, c = row - dr, col - dc
-        while (0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and 
+        while (0 <= r < board_size and 0 <= c < board_size and 
                board[r][c] == player):
             count += 1
             r, c = r - dr, c - dc
-        
         if count >= 5:
             return True
-
     return False
 
-def find_winning_line(board, row, col):
-    """找到获胜的五子连线"""
+def find_winning_line(board, row, col, board_size):
     player = board[row][col]
     directions = [
-        (0, 1),   # 水平
-        (1, 0),   # 垂直  
-        (1, 1),   # 主对角线
-        (1, -1)   # 副对角线
+        (0, 1), (1, 0), (1, 1), (1, -1)
     ]
-
     for dr, dc in directions:
         line = [(row, col)]
-        
-        # 向一个方向搜索
         r, c = row + dr, col + dc
-        while (0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and 
+        while (0 <= r < board_size and 0 <= c < board_size and 
                board[r][c] == player):
             line.append((r, c))
             r, c = r + dr, c + dc
-        
-        # 向相反方向搜索
         r, c = row - dr, col - dc
-        while (0 <= r < BOARD_SIZE and 0 <= c < BOARD_SIZE and 
+        while (0 <= r < board_size and 0 <= c < board_size and 
                board[r][c] == player):
             line.insert(0, (r, c))
             r, c = r - dr, c - dc
-        
         if len(line) >= 5:
-            return line[:5]  # 只返回前5个
-
+            return line[:5]
     return []
 
-def get_board_position_from_mouse(mouse_pos, board_x, board_y):
-    """将鼠标位置转换为棋盘坐标"""
+def get_board_position_from_mouse(mouse_pos, board_x, board_y, board_size):
     x, y = mouse_pos
-    board_width = BOARD_SIZE * CELL_SIZE
-    board_height = BOARD_SIZE * CELL_SIZE
-
-    # 检查是否在棋盘范围内
+    board_width = board_size * CELL_SIZE
+    board_height = board_size * CELL_SIZE
     if (board_x <= x <= board_x + board_width and
         board_y <= y <= board_y + board_height):
-
         col = (x - board_x) // CELL_SIZE
         row = (y - board_y) // CELL_SIZE
-        
-        if 0 <= row < BOARD_SIZE and 0 <= col < BOARD_SIZE:
+        if 0 <= row < board_size and 0 <= col < board_size:
             return row, col
-
     return None, None

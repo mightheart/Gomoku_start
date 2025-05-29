@@ -10,7 +10,7 @@ pygame.init()
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 CELL_SIZE = 40
-BOARD_SIZE = 15
+
 
 # 颜色定义
 WHITE = (255, 255, 255)
@@ -25,6 +25,7 @@ GOLD = (255, 215, 0)  # 用于高亮获胜棋子
 
 # 游戏状态
 GAME_STATE_MENU = "menu"
+GAME_STATE_SELECT_SIZE = "select_size"  # 新增
 GAME_STATE_SELECT_SIDE = "select_side"
 GAME_STATE_PLAYING = "playing"
 

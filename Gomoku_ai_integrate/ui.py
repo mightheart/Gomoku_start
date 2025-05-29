@@ -11,7 +11,7 @@ class GameUI:
     def __init__(self):
         self.background_image = load_background_image()
         self.font_large, self.font_medium, self.font_small = load_fonts()
-        self.board_x = (SCREEN_WIDTH - BOARD_SIZE * CELL_SIZE) // 2
+        self.board_x = (SCREEN_WIDTH - 15 * CELL_SIZE) // 2  # 仅用于初始位置
         self.board_y = 120
     
     def draw_background(self, screen):
@@ -59,6 +59,35 @@ class GameUI:
             screen.blit(rule_text, rule_rect)
             y_offset += 30
     
+    def draw_size_selection(self, screen):
+        """绘制棋盘大小选择界面"""
+        self.draw_background(screen)
+        
+        # 绘制半透明覆盖层
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(128)
+        overlay.fill(LIGHT_BROWN)
+        screen.blit(overlay, (0, 0))
+        
+        # 标题
+        title_text = self.font_medium.render("选择棋盘大小", True, BLACK)
+        title_rect = title_text.get_rect(center=(SCREEN_WIDTH // 2, 150))
+        screen.blit(title_text, title_rect)
+        
+        sizes = [13, 14, 15]
+        buttons = []
+        for i, size in enumerate(sizes):
+            rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, 250 + i * 100, 300, 60)
+            pygame.draw.rect(screen, WHITE, rect)
+            pygame.draw.rect(screen, BLACK, rect, 2)
+            text = self.font_medium.render(f"{size} x {size}", True, BLACK)
+            text_rect = text.get_rect(center=rect.center)
+            screen.blit(text, text_rect)
+            buttons.append(rect)
+        
+        return buttons
+    
+
     def draw_side_selection(self, screen):
         """绘制执棋方选择界面"""
         self.draw_background(screen)
@@ -94,46 +123,54 @@ class GameUI:
         
         return button1_rect, button2_rect
     
-    def draw_board(self, screen):
+    def draw_board(self, screen, board_size):
         """绘制棋盘"""
+        board_x = (SCREEN_WIDTH - board_size * CELL_SIZE) // 2
+        board_y = 120
+        self.board_x = board_x
+        self.board_y = board_y
+        
         # 绘制棋盘背景
-        board_rect = pygame.Rect(self.board_x - 20, self.board_y - 20,
-                                BOARD_SIZE * CELL_SIZE + 40, BOARD_SIZE * CELL_SIZE + 40)
+        board_rect = pygame.Rect(board_x - 20, board_y - 20,
+                                 board_size * CELL_SIZE + 40, board_size * CELL_SIZE + 40)
         pygame.draw.rect(screen, BROWN, board_rect)
         
         # 绘制网格线
-        for i in range(BOARD_SIZE):
+        for i in range(board_size):
             # 垂直线
-            start_x = self.board_x + CELL_SIZE // 2
-            end_x = self.board_x + CELL_SIZE // 2
-            start_y = self.board_y + CELL_SIZE // 2
-            end_y = self.board_y + (BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE // 2
+            start_x = board_x + CELL_SIZE // 2
+            end_x = board_x + CELL_SIZE // 2
+            start_y = board_y + CELL_SIZE // 2
+            end_y = board_y + (board_size - 1) * CELL_SIZE + CELL_SIZE // 2
             
             line_x = start_x + i * CELL_SIZE
             pygame.draw.line(screen, BLACK, (line_x, start_y), (line_x, end_y), 2)
             
             # 水平线
-            start_x = self.board_x + CELL_SIZE // 2
-            end_x = self.board_x + (BOARD_SIZE - 1) * CELL_SIZE + CELL_SIZE // 2
+            start_x = board_x + CELL_SIZE // 2
+            end_x = board_x + (board_size - 1) * CELL_SIZE + CELL_SIZE // 2
             line_y = start_y + i * CELL_SIZE
             pygame.draw.line(screen, BLACK, (start_x, line_y), (end_x, line_y), 2)
         
         # 绘制天元
-        center = BOARD_SIZE // 2
-        x = self.board_x + center * CELL_SIZE + CELL_SIZE // 2
-        y = self.board_y + center * CELL_SIZE + CELL_SIZE // 2
+        center = board_size // 2
+        x = board_x + center * CELL_SIZE + CELL_SIZE // 2
+        y = board_y + center * CELL_SIZE + CELL_SIZE // 2
         pygame.draw.circle(screen, BLACK, (x, y), 4)
     
-    def draw_pieces(self, screen, board, winning_five=None):
+    def draw_pieces(self, screen, board, winning_five=None, board_size=None):
         """绘制棋子"""
         if winning_five is None:
             winning_five = []
-            
-        for row in range(BOARD_SIZE):
-            for col in range(BOARD_SIZE):
+        if board_size is None:
+            board_size = len(board)
+        board_x = self.board_x
+        board_y = self.board_y
+        for row in range(board_size):
+            for col in range(board_size):
                 if board[row][col] != PIECE_EMPTY:
-                    x = self.board_x + col * CELL_SIZE + CELL_SIZE // 2
-                    y = self.board_y + row * CELL_SIZE + CELL_SIZE // 2
+                    x = board_x + col * CELL_SIZE + CELL_SIZE // 2
+                    y = board_y + row * CELL_SIZE + CELL_SIZE // 2
                     
                     # 判断棋子颜色
                     piece_color = BLACK if board[row][col] == PIECE_BLACK else WHITE
@@ -186,3 +223,5 @@ class GameUI:
         if ai_thinking and winner == 0 and current_player != player_side:
             thinking_text = self.font_small.render("AI思考中...", True, RED)
             screen.blit(thinking_text, (50, 50))
+
+

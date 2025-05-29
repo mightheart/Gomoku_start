@@ -11,14 +11,14 @@ Gomoku_ai_integrate/
 ├── ui.py                # 界面绘制相关
 ├── utils.py             # 工具函数
 ├── constants.py         # 常量定义
-├── config_4.py          # AI配置（已存在）
+├── config_4.py          # AI配置
 └── data/
-    └── background.jpg   # 资源文件
+    └──  # 资源文件
 ```
 
 ### 文件说明
 
-- **main.py** - 程序的主入口点，负责启动游戏
+- **main.py** - 启动游戏
 - **game.py** - 包含游戏主类 `GobangGame`，处理游戏逻辑
 - **ai.py** - AI算法实现，包含棋型评估和决策逻辑
 - **ui.py** - 用户界面相关功能，负责绘制游戏界面
@@ -26,4 +26,3 @@ Gomoku_ai_integrate/
 - **constants.py** - 游戏常量定义，如颜色、尺寸等
 - **config_4.py** - AI配置文件，包含棋型评估模型
 - **data/** - 资源文件目录
-  - **background.jpg** - 游戏背景图片

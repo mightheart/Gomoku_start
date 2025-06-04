@@ -3,10 +3,11 @@
 """
 import pygame
 import sys
+from chessboard import ChessBoard
 from constants import *
 from ui import GameUI
 from ai import AIPlayer
-from utils import check_winner_at_position, find_winning_line, get_board_position_from_mouse
+from utils import get_board_position_from_mouse
 
 class GobangGame:
     """五子棋游戏主类"""
@@ -25,16 +26,7 @@ class GobangGame:
         self.board_size = 15  # 默认15
         self.board = []
         self.current_player = PLAYER_BLACK
-        self.winner = 0
-        self.winning_five = []
         self.player_side = PLAYER_BLACK
-        
-        # 用于撤回/恢复功能
-        self.move_history = []
-        self.undo_stack = []
-        
-        # 键盘状态跟踪
-        self.last_key_time = {}
         
         # 初始化棋盘
         self.reset_game()
@@ -42,56 +34,37 @@ class GobangGame:
     def reset_game(self):
         """重置游戏"""
         print("游戏重置")
-        self.board = [[PIECE_EMPTY for _ in range(self.board_size)] for _ in range(self.board_size)]
+        self.chess_board = ChessBoard(size=self.board_size)
+        self.board = self.chess_board.board
         self.current_player = PLAYER_BLACK
-        self.winner = 0
-        self.winning_five = []
-        self.move_history = []
-        self.undo_stack = []
         self.ai_player.thinking = False
     
     def place_piece(self, row, col):
         """放置棋子"""
-        if self.board[row][col] == PIECE_EMPTY and self.winner == 0:
-            # 根据当前玩家确定棋子类型
-            piece = PIECE_BLACK if self.current_player == PLAYER_BLACK else PIECE_WHITE
-            self.board[row][col] = piece
-            
-            # 记录落子历史
-            self.move_history.append((row, col, self.current_player))
-            
-            # 清空恢复栈
-            self.undo_stack = []
-            
-            print(f"玩家{self.current_player}在({row},{col})落子")
-            
-            # 检查是否获胜
-            if check_winner_at_position(self.board, row, col, self.board_size):
-                self.winner = self.current_player
-                self.winning_five = find_winning_line(self.board, row, col, self.board_size)
-                print(f"玩家{self.current_player}获胜！")
-            else:
-                # 切换玩家
-                self.current_player = PLAYER_WHITE if self.current_player == PLAYER_BLACK else PLAYER_BLACK
-            
-            return True
+        if self.chess_board.is_empty(row, col) and self.chess_board.winner == 0:
+            # 使用ChessBoard的place_stone方法
+            if self.chess_board.place_stone(row, col, self.current_player):
+                print(f"玩家{self.current_player}在({row},{col})落子")
+                
+                # 检查是否获胜
+                if self.chess_board.winner != 0:
+                    print(f"玩家{self.chess_board.winner}获胜！")
+                else:
+                    # 切换玩家
+                    self.current_player = PLAYER_WHITE if self.current_player == PLAYER_BLACK else PLAYER_BLACK
+                
+                return True
         return False
     
     def undo_move(self):
         """撤回一步棋"""
-        if len(self.move_history) > 0:
-            # 从历史记录中取出最后一步
-            row, col, player = self.move_history.pop()
-            
-            # 保存到恢复栈
-            self.undo_stack.append((row, col, player))
-            
-            # 清空棋盘位置
-            self.board[row][col] = PIECE_EMPTY
+        result = self.chess_board.undo_move()
+        if result:
+            row, col, player = result
             
             # 重置获胜状态
-            self.winner = 0
-            self.winning_five = []
+            self.chess_board.winner = 0
+            self.chess_board.winning_line = []
             
             # 恢复当前玩家
             self.current_player = player
@@ -101,21 +74,14 @@ class GobangGame:
     
     def redo_move(self):
         """恢复一步棋"""
-        if len(self.undo_stack) > 0:
-            # 从恢复栈中取出最后一步
-            row, col, player = self.undo_stack.pop()
-            
-            # 将棋子放回棋盘
-            piece = PIECE_BLACK if player == PLAYER_BLACK else PIECE_WHITE
-            self.board[row][col] = piece
-            
-            # 添加回历史记录
-            self.move_history.append((row, col, player))
+        result = self.chess_board.redo_move()
+        if result:
+            row, col, player = result
             
             # 检查是否获胜
-            if check_winner_at_position(self.board, row, col, self.board_size):
-                self.winner = player
-                self.winning_five = find_winning_line(self.board, row, col, self.board_size)
+            if self.chess_board.check_winner_at_position(row, col):
+                self.chess_board.winner = player
+                self.chess_board.winning_line = self.chess_board.find_winning_line(row, col)
             
             # 设置下一个玩家
             self.current_player = PLAYER_WHITE if player == PLAYER_BLACK else PLAYER_BLACK
@@ -125,7 +91,7 @@ class GobangGame:
     
     def ai_move(self):
         """AI进行移动"""
-        if self.winner != 0 or self.ai_player.thinking:
+        if self.chess_board.winner != 0 or self.ai_player.thinking:
             return
         
         print("AI开始思考...")
@@ -133,9 +99,9 @@ class GobangGame:
         # 更新显示，显示"AI思考中..."
         self.ui.draw_background(self.screen)
         self.ui.draw_board(self.screen, self.board_size)
-        self.ui.draw_pieces(self.screen, self.board, self.winning_five, self.board_size)
-        self.ui.draw_game_info(self.screen, self.current_player, self.winner, 
-                              self.move_history, self.undo_stack, True, self.player_side)
+        self.ui.draw_pieces(self.screen, self.board, self.chess_board.winning_line, self.board_size)
+        self.ui.draw_game_info(self.screen, self.current_player, self.chess_board.winner, 
+                              self.chess_board.move_history, self.chess_board.undo_stack, True, self.player_side)
         pygame.display.flip()
         
         try:
@@ -195,7 +161,7 @@ class GobangGame:
     def handle_game_events(self, event):
         """处理游戏事件"""
         if event.type == pygame.MOUSEBUTTONDOWN:
-            if event.button == 1 and not self.ai_player.thinking and self.winner == 0:
+            if event.button == 1 and not self.ai_player.thinking and self.chess_board.winner == 0:
                 # 只有在玩家回合才能下棋
                 if self.current_player == self.player_side:
                     row, col = get_board_position_from_mouse(event.pos, self.ui.board_x, self.ui.board_y, self.board_size)
@@ -225,9 +191,9 @@ class GobangGame:
                 self.game_state = GAME_STATE_MENU
                 
             elif event.key == pygame.K_u:  # U键撤回
-                if not self.ai_player.thinking and len(self.move_history) > 0 and self.winner == 0:
+                if not self.ai_player.thinking and self.chess_board.has_moves_to_undo() and self.chess_board.winner == 0:
                     # 撤回两步（玩家的一步 + AI的一步）
-                    moves_to_undo = min(2, len(self.move_history))
+                    moves_to_undo = min(2, len(self.chess_board.move_history))
                     for _ in range(moves_to_undo):
                         if not self.undo_move():
                             break
@@ -236,9 +202,9 @@ class GobangGame:
                     print("无法撤回：AI思考中、无历史记录或游戏已结束")
                     
             elif event.key == pygame.K_d:  # D键恢复
-                if not self.ai_player.thinking and len(self.undo_stack) > 0 and self.winner == 0:
+                if not self.ai_player.thinking and self.chess_board.has_moves_to_redo() and self.chess_board.winner == 0:
                     # 恢复两步
-                    moves_to_redo = min(2, len(self.undo_stack))
+                    moves_to_redo = min(2, len(self.chess_board.undo_stack))
                     for _ in range(moves_to_redo):
                         if not self.redo_move():
                             break
@@ -285,14 +251,14 @@ class GobangGame:
             elif self.game_state == GAME_STATE_PLAYING:
                 self.ui.draw_background(self.screen)
                 self.ui.draw_board(self.screen, self.board_size)
-                self.ui.draw_pieces(self.screen, self.board, self.winning_five, self.board_size)
-                self.ui.draw_game_info(self.screen, self.current_player, self.winner, 
-                                      self.move_history, self.undo_stack, 
+                self.ui.draw_pieces(self.screen, self.board, self.chess_board.winning_line, self.board_size)
+                self.ui.draw_game_info(self.screen, self.current_player, self.chess_board.winner, 
+                                      self.chess_board.move_history, self.chess_board.undo_stack, 
                                       self.ai_player.thinking, self.player_side)
                 
                 # AI回合处理
                 if (self.current_player != self.player_side and
-                        self.winner == 0 and
+                        self.chess_board.winner == 0 and
                         not self.ai_player.thinking):
                     pygame.time.wait(40)
                     self.ai_move()
@@ -304,4 +270,3 @@ class GobangGame:
         sys.exit()
 
 
-    

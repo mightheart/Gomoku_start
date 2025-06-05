@@ -13,7 +13,12 @@ class Piece(object):
         self.obj.setPos(square_pos(square))
 
 class Pawn(Piece):
-    model = "models/pawn"
+    model = "models/white_chess_piece.obj"
+
+    def __init__(self, square_index, color, base):
+        super().__init__(square_index, color, base)
+        self.obj.setScale(0.3, 0.3, 0.3)  # 缩小模型
+        self.obj.setHpr(0, -90, 0)       # 调整方向
 
 class King(Piece):
     model = "models/king"

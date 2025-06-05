@@ -59,7 +59,7 @@ class CameraController:
         
         # 计算新的俯仰角
         new_p = p + speed * dt
-        new_p = max(CAMERA_MIN_PITCH, min(CAMERA_MAX_PITCH, new_p))
+        # new_p = max(CAMERA_MIN_PITCH, min(CAMERA_MAX_PITCH, new_p))
         
         # 如果角度没有实际变化，直接返回
         if abs(new_p - p) < 0.001:

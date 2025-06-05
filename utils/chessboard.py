@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Tuple
-from constants import PIECE_EMPTY, PIECE_BLACK, PIECE_WHITE, PLAYER_BLACK, PLAYER_WHITE
+from utils.constants import PIECE_EMPTY, PIECE_BLACK, PIECE_WHITE, PLAYER_BLACK, PLAYER_WHITE
 
 class ChessBoard(BaseModel):
     size: int = Field(default=15, description="棋盘大小")
@@ -16,7 +16,15 @@ class ChessBoard(BaseModel):
             self.board = [[PIECE_EMPTY for _ in range(self.size)] for _ in range(self.size)]
     
     def place_stone(self, row: int, col: int, player: int) -> bool:
-        """在指定位置放置棋子"""
+        """在指定位置放置棋子
+
+        Args:
+            row (int): 行号
+            col (int): 列号
+            player (int): 玩家标识，1为黑方，2为白方
+        Returns:    
+            bool: 是否成功放置棋子
+        """
         if 0 <= row < self.size and 0 <= col < self.size and self.board[row][col] == PIECE_EMPTY:
             piece = PIECE_BLACK if player == PLAYER_BLACK else PIECE_WHITE
             self.board[row][col] = piece
@@ -167,3 +175,46 @@ class ChessBoard(BaseModel):
     def has_moves_to_redo(self) -> bool:
         """检查是否有可恢复的步数"""
         return len(self.undo_stack) > 0
+    
+    def display_board(self):
+        """在控制台展示棋盘"""
+        # 打印列号标题
+        print("   ", end="")
+        for i in range(self.size):
+            print(f"{i:2d}", end=" ")
+        print()
+        
+        # 打印棋盘内容
+        for row in range(self.size):
+            print(f"{row:2d} ", end="")
+            for col in range(self.size):
+                piece = self.board[row][col]
+                if piece == PIECE_EMPTY:
+                    print(" ·", end=" ")
+                elif piece == PIECE_BLACK:
+                    print(" ●", end=" ")
+                elif piece == PIECE_WHITE:
+                    print(" ○", end=" ")
+            print()
+    
+    def check_board_winner(self) -> int:
+        """检查整个棋盘是否有胜利者
+        
+        Returns:
+            int: 胜利者标识，0表示无胜利者，1表示黑方胜利，2表示白方胜利
+        """
+        for row in range(self.size):
+            for col in range(self.size):
+                if self.board[row][col] != PIECE_EMPTY:
+                    winning_line = self.find_winning_line(row, col)
+                    if len(winning_line) >= 5:
+                        player = self.get_player_from_piece(self.board[row][col])
+                        self.winner = player
+                        self.winning_line = winning_line
+                        return player
+        
+        self.winner = 0
+        self.winning_line = []
+        return 0
+
+    

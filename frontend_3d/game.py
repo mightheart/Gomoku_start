@@ -11,7 +11,7 @@ import time
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
-    LineSegs, RenderState, Texture, CardMaker
+    LineSegs, RenderState, Texture, CardMaker, Material
 )
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import TextNode
@@ -26,7 +26,8 @@ from utils.constants import (
     SQUARE_SCALE, TOTAL_SQUARES,
     PLAYER_WHITE, PLAYER_BLACK,
     PIECE_BLACK, PIECE_WHITE,
-    BACKGROUND_POSITION  # 导入背景位置常量
+    BACKGROUND_POSITION,  # 导入背景位置常量
+    DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z  # 导入装饰模型缩放常量
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -278,7 +279,8 @@ class Gomoku_Start(ShowBase):
         if self.white_box:
             self.white_box.reparentTo(self.render)
             self.white_box.setPos(WHITE_BOX_POS)
-            self.white_box.setColor(WHITE_3D)
+            self.white_box.setTransparency(True)
+            self.white_box.setColor(1, 1, 1, 0)  # 设置白棋盒为透明
             self.white_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
             
             # 设置碰撞检测
@@ -297,7 +299,8 @@ class Gomoku_Start(ShowBase):
         if self.black_box:
             self.black_box.reparentTo(self.render)
             self.black_box.setPos(BLACK_BOX_POS)
-            self.black_box.setColor(PIECEBLACK)
+            self.black_box.setTransparency(True)
+            self.black_box.setColor(1, 1, 1, 0)  # 设置黑棋盒为透明
             self.black_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
             
             # 设置碰撞检测
@@ -310,6 +313,50 @@ class Gomoku_Start(ShowBase):
                 print("警告: 黑棋盒没有找到碰撞多边形")
         else:
             print("错误: 无法加载黑棋盒模型")
+
+        # 创建白棋盒装饰模型
+        decoration_model_white = self.loader.loadModel("models/qihe.obj")
+        if decoration_model_white:
+            decoration_model_white.reparentTo(self.render)
+            decoration_model_white.setPos(WHITE_BOX_POS)
+            decoration_model_white.setColor(WHITE_3D)
+            decoration_model_white.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
+            white_material = Material()
+            white_material.setDiffuse(WHITE_3D)
+            decoration_model_white.setMaterial(white_material)
+            print("白棋盒装饰模型创建成功")
+        else:
+            print("错误: 无法加载白棋盒装饰模型")
+
+        # 创建黑棋盒装饰模型
+        decoration_model_black = self.loader.loadModel("models/qihe.obj")
+        if decoration_model_black:
+            decoration_model_black.reparentTo(self.render)
+            decoration_model_black.setPos(BLACK_BOX_POS)
+            decoration_model_black.setColor(PIECEBLACK)
+            decoration_model_black.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
+            black_material = Material()
+            black_material.setDiffuse(PIECEBLACK)
+            decoration_model_black.setMaterial(black_material)
+            print("黑棋盒装饰模型创建成功")
+        else:
+            print("错误: 无法加载黑棋盒装饰模型")
+
+        # 应用装饰模型的旋转和位置偏移
+        from utils.constants import DECORATION_ROTATION, DECORATION_POSITION_OFFSET
+        decoration_model_white.setHpr(DECORATION_ROTATION)
+        decoration_model_white.setPos(
+            WHITE_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
+            WHITE_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
+            WHITE_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
+        )
+
+        decoration_model_black.setHpr(DECORATION_ROTATION)
+        decoration_model_black.setPos(
+            BLACK_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
+            BLACK_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
+            BLACK_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
+        )
 
     def switch_player(self):
         """切换玩家"""
@@ -512,4 +559,34 @@ class Gomoku_Start(ShowBase):
             print("背景图片加载成功")
         except Exception as e:
             print(f"背景图片加载失败: {e}")
+    
+    def _setup_decoration(self):
+        """设置棋盒装饰模型"""
+        from utils.constants import WHITE_BOX_POS, BLACK_BOX_POS, DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z
+        from panda3d.core import Material
+
+        # 加载模型
+        model_path = "models/qihe.obj"
+        decoration_model = self.loader.loadModel(model_path)
+
+        # 设置模型缩放比例
+        decoration_model.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
+
+        # 设置模型材质颜色为白棋盒颜色
+        white_material = Material()
+        white_material.setDiffuse((1, 1, 1, 1))  # 白棋盒颜色
+        decoration_model.setMaterial(white_material)
+
+        # 设置模型位置为白棋盒位置
+        decoration_model.setPos(WHITE_BOX_POS[0], WHITE_BOX_POS[1], WHITE_BOX_POS[2])
+
+        # 将模型附加到渲染节点
+        decoration_model.reparentTo(self.render)
+
+        # 复制模型并设置为黑棋盒装饰
+        black_decoration_model = decoration_model.copyTo(self.render)
+        black_material = Material()
+        black_material.setDiffuse((0, 0, 0, 1))  # 黑棋盒颜色
+        black_decoration_model.setMaterial(black_material)
+        black_decoration_model.setPos(BLACK_BOX_POS[0], BLACK_BOX_POS[1], BLACK_BOX_POS[2])
 

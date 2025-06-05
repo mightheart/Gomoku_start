@@ -61,6 +61,7 @@ SQUARE_SCALE = 0.65  # 格子缩放比例
 PIECE_SCALE = 0.85   # 棋子缩放比例
 HIGHLIGHT_INDICATOR_RADIUS = 0.3  # 高亮指示器缩放比例
 HIGHLIGHT_INDICATOR_SEGMENT = 32  # 高亮指示器分段数，越多越圆滑
+MODEL_SCALE = 0.5  # 模型缩放比例，用于调节模型大小
 
 # 棋盒位置
 WHITE_BOX_POS = (0, -6, 0)  # 白棋盒位置
@@ -69,3 +70,12 @@ BOX_SIZE = 1              # 棋盒缩放比例
 
 # 背景图片位置常量
 BACKGROUND_POSITION = (0, 125, 5)  # 默认位置，便于调整
+
+# 装饰模型的轴向缩放比例
+DECORATION_SCALE_X = 0.006  # X轴缩放比例
+DECORATION_SCALE_Y = 0.006  # Y轴缩放比例
+DECORATION_SCALE_Z = 0.006  # Z轴缩放比例
+
+# 装饰模型的旋转和位置调节参数
+DECORATION_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)
+DECORATION_POSITION_OFFSET = (0, 0, 0)  # 默认位置偏移 (X, Y, Z)

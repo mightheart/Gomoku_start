@@ -7,6 +7,7 @@ Panda3D 的事件系统需要传递方法引用，而不是直接调用
 
 import sys
 import copy
+import time
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
@@ -22,9 +23,12 @@ from utils.constants import (
     WHITE_3D, PIECEBLACK, 
     MAX_PIECES_PER_PLAYER,BOARD_SIZE,PIECE_DRAG_HEIGHT,TOTAL_SQUARES,
     WHITE_BOX_POS, BLACK_BOX_POS, BOX_SIZE,
-    SQUARE_SCALE, TOTAL_SQUARES
+    SQUARE_SCALE, TOTAL_SQUARES,
+    PLAYER_WHITE, PLAYER_BLACK,
+    PIECE_BLACK, PIECE_WHITE,
 )
 from utils.helpers import square_pos, square_color
+from utils.chessboard import ChessBoard
 from pieces.chess_pieces import Pawn
 from .camera_controller import CameraController
 from .mouse_picker import MousePicker
@@ -38,18 +42,24 @@ class Gomoku_Start(ShowBase):
         ShowBase.__init__(self)
         
         # 五子棋游戏状态
-        self.current_player = 'white'
+        self.current_player = PLAYER_WHITE
         self.white_pieces_count = MAX_PIECES_PER_PLAYER
         self.black_pieces_count = MAX_PIECES_PER_PLAYER
 
         self.is_ai_enabled = True
-        self.ai_side = 'black'
-        self.board_size = BOARD_SIZE  # 棋盘大小
-        self.board = [[' ' for _ in range(self.board_size)] for _ in range(self.board_size)]
+        self.ai_side = PLAYER_BLACK
+        self.chessboard = ChessBoard(size=BOARD_SIZE)  # 初始化棋盘对象
 
         # 关键：初始化AI对象
         self.ai_player = AIPlayer()
         self.ai_thinking_text = None # AI思考状态显示
+
+        # 三连击检测变量
+        self.key_press_times = {}  # 存储每个键的按下时间
+        self.key_press_counts = {}  # 存储每个键的连续按下次数
+        self.triple_click_threshold = 0.5  # 三连击时间阈值（秒）
+        self.auto_rotate_active = {}  # 存储自动旋转状态
+        self.auto_rotate_task = None  # 自动旋转任务
 
         # 初始化游戏组件
         self._setup_ui()
@@ -78,14 +88,19 @@ class Gomoku_Start(ShowBase):
             style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.16), scale=.05)
         
         self.camera_event1 = OnscreenText(
-            text="A/D: rotate camera left/right",
+            text="A/D: rotate camera left/right (Triple click for auto)",
             parent=self.a2dTopLeft, align=TextNode.ALeft,
             style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.22), scale=.05)
         
         self.camera_event2 = OnscreenText(
-            text="W/S: rotate camera up/down",
+            text="W/S: rotate camera up/down (Triple click for auto)",
             parent=self.a2dTopLeft, align=TextNode.ALeft,
             style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.28), scale=.05)
+        
+        self.space_event = OnscreenText(
+            text="SPACE: Stop auto rotation",
+            parent=self.a2dTopLeft, align=TextNode.ALeft,
+            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.34), scale=.05)
         
         # 创建AI思考状态文本（初始隐藏）
         self._create_ai_thinking_text()
@@ -94,20 +109,118 @@ class Gomoku_Start(ShowBase):
         """设置输入处理"""
         self.accept('escape', sys.exit)
         
-        # 摄像机控制键位
-        self.accept("a", self._set_camera_key, ["cam-left", True])
+        # 摄像机控制键位（修改为支持三连击检测）
+        self.accept("a", self._handle_key_press, ["cam-left"])
         self.accept("a-up", self._set_camera_key, ["cam-left", False])
-        self.accept("d", self._set_camera_key, ["cam-right", True])
+        self.accept("d", self._handle_key_press, ["cam-right"])
         self.accept("d-up", self._set_camera_key, ["cam-right", False])
-        self.accept("w", self._set_camera_key, ["cam-up", True])
+        self.accept("w", self._handle_key_press, ["cam-up"])
         self.accept("w-up", self._set_camera_key, ["cam-up", False])
-        self.accept("s", self._set_camera_key, ["cam-down", True])
+        self.accept("s", self._handle_key_press, ["cam-down"])
         self.accept("s-up", self._set_camera_key, ["cam-down", False])
+        
+        # 添加空格键停止自动旋转
+        self.accept("space", self._stop_auto_rotate)
         
         # 鼠标控制
         self.accept("mouse1", self._grab_piece)
         self.accept("mouse1-up", self._release_piece)
     
+    def _handle_key_press(self, key):
+        """处理键盘按下事件，检测三连击"""
+        current_time = time.time()
+        
+        # 初始化键的记录
+        if key not in self.key_press_times:
+            self.key_press_times[key] = []
+            self.key_press_counts[key] = 0
+            self.auto_rotate_active[key] = False
+        
+        # 清理过期的按键记录
+        self.key_press_times[key] = [t for t in self.key_press_times[key] 
+                                    if current_time - t <= self.triple_click_threshold]
+        
+        # 记录当前按键时间
+        self.key_press_times[key].append(current_time)
+        
+        # 检测是否达到三连击
+        if len(self.key_press_times[key]) >= 3:
+            # 检查最近三次按键是否在时间阈值内
+            recent_times = self.key_press_times[key][-3:]
+            if recent_times[-1] - recent_times[0] <= self.triple_click_threshold:
+                print(f"检测到 {key} 三连击！开始自动旋转")
+                self._start_auto_rotate(key)
+                # 清空记录，避免重复触发
+                self.key_press_times[key] = []
+                return
+        
+        # 普通按键处理
+        self._set_camera_key(key, True)
+
+    def _start_auto_rotate(self, direction):
+        """开始自动旋转"""
+        # 停止之前的自动旋转
+        self._stop_auto_rotate()
+        
+        # 设置新的自动旋转方向
+        for key in self.auto_rotate_active:
+            self.auto_rotate_active[key] = False
+        self.auto_rotate_active[direction] = True
+        
+        # 启动自动旋转任务
+        self.auto_rotate_task = self.taskMgr.add(self._auto_rotate_task, 'autoRotateTask')
+        
+        # 显示提示信息
+        if hasattr(self, 'auto_rotate_hint'):
+            self.auto_rotate_hint.destroy()
+        
+        direction_text = {
+            'cam-left': '左旋转',
+            'cam-right': '右旋转', 
+            'cam-up': '上旋转',
+            'cam-down': '下旋转'
+        }
+        
+        self.auto_rotate_hint = OnscreenText(
+            text=f"自动{direction_text.get(direction, '旋转')}中... (按空格键停止)",
+            parent=self.a2dTopLeft, align=TextNode.ALeft,
+            style=1, fg=(1, 1, 0, 1), pos=(0.06, -0.4), scale=.05)
+
+    def _stop_auto_rotate(self):
+        """停止自动旋转"""
+        # 停止自动旋转任务
+        if self.auto_rotate_task:
+            self.taskMgr.remove(self.auto_rotate_task)
+            self.auto_rotate_task = None
+        
+        # 重置所有自动旋转状态
+        for key in self.auto_rotate_active:
+            self.auto_rotate_active[key] = False
+        
+        # 停止所有摄像机键状态
+        self.camera_controller.set_key('cam-left', False)
+        self.camera_controller.set_key('cam-right', False)
+        self.camera_controller.set_key('cam-up', False)
+        self.camera_controller.set_key('cam-down', False)
+        
+        # 移除提示文本
+        if hasattr(self, 'auto_rotate_hint'):
+            self.auto_rotate_hint.destroy()
+            delattr(self, 'auto_rotate_hint')
+        
+        print("自动旋转已停止")
+
+    def _auto_rotate_task(self, task):
+        """自动旋转任务"""
+        # 检查哪个方向需要自动旋转
+        for direction, active in self.auto_rotate_active.items():
+            if active:
+                self.camera_controller.set_key(direction, True)
+            else:
+                self.camera_controller.set_key(direction, False)
+        
+        return task.cont
+
     def _setup_camera(self):
         """设置摄像机初始位置和角度"""
         self.disableMouse()
@@ -132,7 +245,7 @@ class Gomoku_Start(ShowBase):
         
         # 15x15棋盘，225个格子
         self.squares = [None for _ in range(TOTAL_SQUARES)]
-        self.pieces = [None for _ in range(TOTAL_SQUARES)]
+        self.pieces = [None for _ in range(TOTAL_SQUARES)]  # 保留用于渲染
         
         # 创建棋盘格子
         for i in range(TOTAL_SQUARES):
@@ -151,7 +264,7 @@ class Gomoku_Start(ShowBase):
         
         # 创建棋盒
         self._setup_piece_boxes()
-    
+
     def _setup_piece_boxes(self):
         """设置棋盒"""
         print("开始创建棋盒...")
@@ -194,48 +307,53 @@ class Gomoku_Start(ShowBase):
         else:
             print("错误: 无法加载黑棋盒模型")
 
+    def switch_player(self):
+        """切换玩家"""
+        # 切换玩家
+        if self.current_player == PLAYER_WHITE:
+            self.white_pieces_count -= 1
+            self.current_player = PLAYER_BLACK
+            print(f"轮到黑方下棋 (剩余棋子: {self.black_pieces_count})")
+        else:
+            self.black_pieces_count -= 1
+            self.current_player = PLAYER_WHITE
+            print(f"轮到白方下棋 (剩余棋子: {self.white_pieces_count})")
+        
+    def check_winner(self):
+        """检查是否有玩家获胜"""
+        if self.chessboard.check_board_winner():
+            if self.chessboard.winner != 0:
+                print(f"玩家{self.chessboard.winner}获胜！")
+                return True
+            return False
+    
     def _update_gomoku_state(self, last_pos):
         """更新五子棋游戏状态"""
+        # 切换玩家
+        self.switch_player()
+        
+        # 重新渲染所有棋子
+        self._render_all_pieces()
+        
         # 检查胜利条件
-        current_color = WHITE_3D if self.current_player == 'white' else PIECEBLACK
-        row, col = last_pos // BOARD_SIZE, last_pos % BOARD_SIZE
-        board_chr = 'O' if self.current_player == 'white' else 'X'
-        self.board[row][col] = board_chr
-
-        from utils.helpers import check_five_in_row
-        if check_five_in_row(self.pieces, last_pos, WHITE_3D if self.current_player == 'white' else PIECEBLACK):
-            winner = "White" if self.current_player == 'white' else "Black"
+        if self.check_winner():
+            winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
             print(f"🎉 Game Over! {winner} wins! Exiting in 3 seconds.")
             # 隐藏AI思考提示（如果正在显示）
             self._hide_ai_thinking()
             # 屏幕上祝賀玩家
             OnscreenText(text=f"{winner} wins! Exiting in 3 seconds.", pos=(0, 0), scale=0.1, fg=(1,0,0,1))
             # 3秒后退出
-            self.taskMgr.doMethodLater(3, lambda task: self.userExit() or task.done, 'exit-task')
+            self.taskMgr.doMethodLater(30, lambda task: self.userExit() or task.done, 'exit-task')
+            time.sleep(5)
             return
-
-        # 切换玩家
-        if self.current_player == 'white':
-            self.white_pieces_count -= 1
-            self.current_player = 'black'
-            print(f"轮到黑方下棋 (剩余棋子: {self.black_pieces_count})")
-        else:
-            self.black_pieces_count -= 1
-            self.current_player = 'white'
-            print(f"轮到白方下棋 (剩余棋子: {self.white_pieces_count})")
-
+        
         # AI回合判断
         if self.is_ai_enabled and self.current_player == self.ai_side:
             # 显示AI思考状态，延迟执行AI移动
             self._show_ai_thinking()
             # 延迟1秒执行AI移动，让玩家看到思考提示
             self.taskMgr.doMethodLater(0.1, self._delayed_ai_move, 'ai-move-task')
-
-    def _check_gomoku_win(self, last_pos):
-        """检查五子棋胜利条件"""
-        current_color = WHITE_3D if self.current_player == 'white' else PIECEBLACK
-        from utils.helpers import check_five_in_row
-        return check_five_in_row(self.pieces, last_pos, current_color)
     
     def _draw_gomoku_grid(self):
         """绘制15x15五子棋网格线"""
@@ -330,12 +448,50 @@ class Gomoku_Start(ShowBase):
     
     def do_ai_move(self):
         """AI自动落子"""
-        ai_chr = 'X' if self.ai_side == 'black' else 'O'
-        row, col = self.ai_player.get_move(copy.deepcopy(self.board), self.board_size)
+        old_chessboard = copy.deepcopy(self.chessboard)
+        self.chessboard = self.ai_player.get_next_chessboard(self.chessboard, self.ai_side)
         self._hide_ai_thinking() # 隐藏思考提示
-        if 0 <= row < self.board_size and 0 <= col < self.board_size and self.board[row][col] == ' ':
-            sq = row * self.board_size + col   # 这里改为 self.board_size
-            self.mouse_picker.place_ai_piece(sq, ai_chr)
-        else:
-            print("AI无法落子")
-            self._hide_ai_thinking()
+        
+        # 重新渲染所有棋子
+        self._render_all_pieces()
+        
+        # 切换玩家
+        self.switch_player()
+        
+        # 检查胜利条件
+        if self.check_winner():
+            winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
+            print(f"🎉 Game Over! {winner} wins! Exiting in 3 seconds.")
+            OnscreenText(text=f"{winner} wins! Exiting in 3 seconds.", pos=(0, 0), scale=0.1, fg=(1,0,0,1))
+            self.taskMgr.doMethodLater(3, lambda task: self.userExit() or task.done, 'exit-task')
+
+    def _render_all_pieces(self):
+        """根据chessboard重新渲染所有棋子"""
+        # 销毁所有现有棋子
+        for i in range(TOTAL_SQUARES):
+            if self.pieces[i] is not None:
+                self.pieces[i].obj.removeNode()
+                self.pieces[i] = None
+        
+        # 根据chessboard重新创建棋子
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                piece_type = self.chessboard.get_stone(row, col)
+                if piece_type != ' ':  # 不是空位
+                    square_index = row * BOARD_SIZE + col
+                    
+                    # 根据棋子类型确定颜色
+                    if piece_type == PIECE_BLACK:
+                        color = PIECEBLACK
+                    elif piece_type == PIECE_WHITE:
+                        color = WHITE_3D
+                    else:
+                        continue
+                    
+                    # 创建棋子
+                    piece = Pawn(square_index, color, self)
+                    piece.obj.setPos(square_pos(square_index))
+                    self.pieces[square_index] = piece
+        
+        print("所有棋子重新渲染完成")
+

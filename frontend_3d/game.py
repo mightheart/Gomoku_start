@@ -11,7 +11,7 @@ import time
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
-    LineSegs, RenderState
+    LineSegs, RenderState, Texture, CardMaker
 )
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import TextNode
@@ -26,6 +26,7 @@ from utils.constants import (
     SQUARE_SCALE, TOTAL_SQUARES,
     PLAYER_WHITE, PLAYER_BLACK,
     PIECE_BLACK, PIECE_WHITE,
+    BACKGROUND_POSITION  # 导入背景位置常量
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -69,6 +70,9 @@ class Gomoku_Start(ShowBase):
         self._setup_board()
         self._setup_controllers()
         self._start_tasks()
+        
+        # 加载并渲染背景图片
+        self._load_and_render_background()
     
     def _setup_ui(self):
         """设置用户界面"""
@@ -494,4 +498,18 @@ class Gomoku_Start(ShowBase):
                     self.pieces[square_index] = piece
         
         print("所有棋子重新渲染完成")
+
+    def _load_and_render_background(self):
+        """加载并渲染背景图片"""
+        try:
+            background_texture = self.loader.loadTexture("models/background2.jpg")
+            card_maker = CardMaker("background")
+            card_maker.setFrame(-1, 1, -1, 1)  # 设置平面大小
+            background_card = self.render.attachNewNode(card_maker.generate())
+            background_card.setTexture(background_texture)
+            background_card.setPos(*BACKGROUND_POSITION)  # 使用常量设置位置
+            background_card.setScale(20)  # 根据需要调整大小
+            print("背景图片加载成功")
+        except Exception as e:
+            print(f"背景图片加载失败: {e}")
 

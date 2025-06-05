@@ -6,7 +6,8 @@ import os
 from utils.constants import *
 import time
 from functools import wraps
-
+from panda3d.core import Texture, CardMaker
+from direct.showbase.ShowBase import ShowBase
 
 def set_working_directory():
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -17,7 +18,7 @@ set_working_directory()
 def load_background_image():
     """加载背景图片"""
     try:
-        background_path = os.path.join("data", "background1.jpg")
+        background_path = os.path.join("data", "background2.jpg")
         background_image = pygame.image.load(background_path)
         background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
         return background_image
@@ -62,3 +63,4 @@ def timer(func):
         print(f"函数 {func.__name__} 执行时间: {execution_time:.4f} 秒")
         return result
     return wrapper
+

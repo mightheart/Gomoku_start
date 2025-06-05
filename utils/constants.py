@@ -66,3 +66,6 @@ HIGHLIGHT_INDICATOR_SEGMENT = 32  # 高亮指示器分段数，越多越圆滑
 WHITE_BOX_POS = (0, -6, 0)  # 白棋盒位置
 BLACK_BOX_POS = (0, 6, 0)   # 黑棋盒位置
 BOX_SIZE = 1              # 棋盒缩放比例
+
+# 背景图片位置常量
+BACKGROUND_POSITION = (0, 125, 5)  # 默认位置，便于调整

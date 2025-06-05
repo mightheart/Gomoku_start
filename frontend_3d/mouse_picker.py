@@ -3,7 +3,7 @@
 from panda3d.core import CollisionTraverser, CollisionNode, CollisionHandlerQueue, CollisionRay, BitMask32
 from panda3d.core import LineSegs
 from direct.task.Task import Task
-from utils.constants import HIGHLIGHT, PIECE_DRAG_HEIGHT, WHITE_3D, PIECEBLACK, TOTAL_SQUARES, HIGHLIGHT_INDICATOR_RADIUS, HIGHLIGHT_INDICATOR_SEGMENT, BOARD_SIZE
+from utils.constants import HIGHLIGHT, PIECE_DRAG_HEIGHT, WHITE_3D, PIECEBLACK, TOTAL_SQUARES, HIGHLIGHT_INDICATOR_RADIUS, HIGHLIGHT_INDICATOR_SEGMENT, BOARD_SIZE, PLAYER_BLACK, PLAYER_WHITE
 from utils.helpers import square_color, point_at_z, square_pos, _get_piece_name
 from pieces.chess_pieces import Pawn
 
@@ -33,9 +33,9 @@ class MousePicker:
 
         # 状态变量
         self.hi_sq = False
-        # self.dragging = False
         self.squares = None
-        self.pieces = None
+        # 移除 pieces 引用，改为使用 chessboard
+        
         # 五子棋相关状态
         self.temp_piece = None
         self.dragging_new_piece = False
@@ -67,10 +67,10 @@ class MousePicker:
         self.highlight_circle = self.render.attachNewNode(lines.create())
         self.highlight_circle.hide()  # 初始隐藏
 
-    def set_board_data(self, squares, pieces):
+    def set_board_data(self, squares, pieces=None):
         """设置棋盘数据引用"""
         self.squares = squares
-        self.pieces = pieces
+        # 不再需要 pieces 参数
 
     def set_game_instance(self, game_instance):
         """设置游戏实例引用"""
@@ -79,14 +79,27 @@ class MousePicker:
     def _can_create_piece(self, box_type):
         """检查是否可以创建新棋子"""
         if not self.game_instance:
+            print("游戏实例未设置")
             return False
             
         if box_type == 'white':
-            return (self.game_instance.current_player == 'white' and 
-                    self.game_instance.white_pieces_count > 0)
+            if self.game_instance.current_player != PLAYER_WHITE:
+                print(f"当前不是白方回合，当前玩家: {self.game_instance.current_player}")
+                return False
+            if self.game_instance.white_pieces_count <= 0:
+                print("白方棋子已用完")
+                return False
+            return True
         elif box_type == 'black':
-            return (self.game_instance.current_player == 'black' and 
-                    self.game_instance.black_pieces_count > 0)
+            if self.game_instance.current_player != PLAYER_BLACK:
+                print(f"当前不是黑方回合，当前玩家: {self.game_instance.current_player}")
+                return False
+            if self.game_instance.black_pieces_count <= 0:
+                print("黑方棋子已用完")
+                return False
+            return True
+        else:
+            print(f"未知的棋盒类型: {box_type}")
         return False
 
     def _create_new_piece_from_box(self, box_type):
@@ -107,32 +120,42 @@ class MousePicker:
         if self.hi_sq is False or self.hi_sq < 0 or self.hi_sq >= TOTAL_SQUARES:
             return False
         
-        # 检查位置是否已被占用
-        if self.pieces[self.hi_sq] is not None:
+        # 转换为棋盘坐标并检查chessboard
+        row = self.hi_sq // BOARD_SIZE
+        col = self.hi_sq % BOARD_SIZE
+        
+        if not self.game_instance or not self.game_instance.chessboard.is_empty(row, col):
             print(f"位置 {self._get_square_name(self.hi_sq)} 已被占用")
             return False
         
         return True
 
     def _place_new_gomoku_piece(self):
-        """放置新的五子棋棋子"""
-        if not self.temp_piece:
+        """放置新的五子棋棋子 - 只更新数据层"""
+        if not self.temp_piece or not self.game_instance:
             return
             
-        # 将临时棋子放置到棋盘
-        self.pieces[self.hi_sq] = self.temp_piece
-        self.temp_piece.square = self.hi_sq
-        self.temp_piece.obj.setPos(square_pos(self.hi_sq))
+        # 转换为棋盘坐标
+        row = self.hi_sq // BOARD_SIZE
+        col = self.hi_sq % BOARD_SIZE
         
-        # 更新游戏状态
-        if self.game_instance:
+        # 确定玩家类型
+        player = self.game_instance.current_player
+        
+        # 直接在chessboard中放置棋子
+        if self.game_instance.chessboard.place_stone(row, col, player):
+            piece_color = "白" if player == PLAYER_WHITE else "黑"
+            print(f"{piece_color}棋子放置在 {self._get_square_name(self.hi_sq)}")
+            
+            # 触发游戏状态更新和重新渲染
             self.game_instance._update_gomoku_state(self.hi_sq)
+        else:
+            print("棋子放置失败")
         
-        piece_color = "白" if self.temp_piece.obj.getColor()[0] > 0.5 else "黑"
-        print(f"{piece_color}棋子放置在 {self._get_square_name(self.hi_sq)}")
-        
-        # 清理临时状态
-        self.temp_piece = None
+        # 清理临时棋子
+        if self.temp_piece:
+            self.temp_piece.obj.removeNode()
+            self.temp_piece = None
 
     def _cancel_new_piece(self):
         """取消新棋子放置"""
@@ -155,12 +178,6 @@ class MousePicker:
         
         # 设置射线
         self.picker_ray.setFromLens(self.base.camNode, mpos.getX(), mpos.getY())
-        
-        # 删除处理拖拽已有棋子的逻辑
-        # if self.dragging is not False:
-        #     near_point = self.render.getRelativePoint(self.camera, self.picker_ray.getOrigin())
-        #     near_vec = self.render.getRelativeVector(self.camera, self.picker_ray.getDirection())
-        #     self.pieces[self.dragging].obj.setPos(point_at_z(PIECE_DRAG_HEIGHT, near_point, near_vec))
         
         # 只处理拖拽新创建的棋子
         if self.dragging_new_piece and self.temp_piece:
@@ -186,8 +203,10 @@ class MousePicker:
             if hit_node.hasTag('square'):
                 i = int(hit_node.getTag('square'))
                 
-                # 只有空位才显示高亮（防止点击已有棋子时的混淆）
-                if self.pieces[i] is None:
+                # 检查chessboard中对应位置是否为空
+                row = i // BOARD_SIZE
+                col = i % BOARD_SIZE
+                if self.game_instance and self.game_instance.chessboard.is_empty(row, col):
                     # 显示圆形高亮指示器在选中的格子上
                     square_position = square_pos(i)
                     self.highlight_circle.setPos(square_position.x, square_position.y, square_position.z + 0.02)
@@ -215,13 +234,6 @@ class MousePicker:
                 return
             else:
                 print("点击了未知对象")
-        
-        # 删除原来移动棋子的逻辑
-        # if self.hi_sq is not False and self.hi_sq >= 0 and self.pieces[self.hi_sq]:
-        #     self.dragging = self.hi_sq
-        #     self.hi_sq = False
-        #     from utils.helpers import _get_piece_name
-        #     print(f"抓取棋子: {_get_piece_name(self.pieces[self.dragging])}")
     
     def release_piece(self):
         """释放棋子（只处理新创建的棋子）"""
@@ -233,29 +245,6 @@ class MousePicker:
                 self._cancel_new_piece()
             self.dragging_new_piece = False
             return
-        
-        # 原来移动已有棋子的逻辑
-        # if self.dragging is not False:
-        #     if self.hi_sq is False:
-        #         # 回到原位置
-        #         self.pieces[self.dragging].obj.setPos(square_pos(self.dragging))
-        #         print(f"棋子回到原位置: {self._get_square_name(self.dragging)}")
-        #     else:
-        #         # 检查目标位置是否为空（五子棋规则：只能放在空位）
-        #         if self.pieces[self.hi_sq] is None:
-        #             # 移动棋子
-        #             piece_name = self._get_piece_name(self.pieces[self.dragging])
-        #             from_square = self._get_square_name(self.dragging)
-        #             to_square = self._get_square_name(self.hi_sq)
-        #             
-        #             print(f"棋子移动: {piece_name} 从 {from_square} 到 {to_square}")
-        #             self._swap_pieces(self.dragging, self.hi_sq)
-        #         else:
-        #             # 位置被占用，回到原位
-        #             self.pieces[self.dragging].obj.setPos(square_pos(self.dragging))
-        #             print(f"目标位置被占用，棋子回到原位置: {self._get_square_name(self.dragging)}")
-        #     
-        #     self.dragging = False
     
     def _get_square_name(self, square_index):
         """将数字索引转换为五子棋坐标 - 15x15"""
@@ -267,19 +256,6 @@ class MousePicker:
         
         return f"({col + 1},{row + 1})"  # 返回格式如 (1,1), (2,3) 等，从1开始计数
 
-    # 交换已有棋子的逻辑
-    # def _swap_pieces(self, fr, to):
-    #     """交换两个棋子的位置"""
-    #     temp = self.pieces[fr]
-    #     self.pieces[fr] = self.pieces[to]
-    #     self.pieces[to] = temp
-        
-    #     if self.pieces[fr]:
-    #         self.pieces[fr].square = fr
-    #         self.pieces[fr].obj.setPos(square_pos(fr))
-    #     if self.pieces[to]:
-    #         self.pieces[to].square = to
-    #         self.pieces[to].obj.setPos(square_pos(to))
 
     def _get_piece_name(self, piece):
         """获取棋子名称"""
@@ -299,17 +275,3 @@ class MousePicker:
         }
         
         return f"{color}{piece_names.get(piece_type, piece_type)}"
-
-    def place_ai_piece(self, square_index, ai_chr):
-        """AI自动在指定格子落子"""
-        if self.pieces[square_index] is not None:
-            print(f"AI落子失败，位置{square_index}已被占用")
-            return
-        color = WHITE_3D if ai_chr == 'O' else PIECEBLACK
-        piece = Pawn(square_index, color, self.base)
-        self.pieces[square_index] = piece
-        piece.square = square_index
-        piece.obj.setPos(square_pos(square_index))
-        if self.game_instance:
-            self.game_instance._update_gomoku_state(square_index)
-        print(f"AI落子: {'白' if ai_chr == 'O' else '黑'}棋子放在{self._get_square_name(square_index)}")

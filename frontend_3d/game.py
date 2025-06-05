@@ -27,7 +27,8 @@ from utils.constants import (
     PLAYER_WHITE, PLAYER_BLACK,
     PIECE_BLACK, PIECE_WHITE,
     BACKGROUND_POSITION,  # 导入背景位置常量
-    DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z  # 导入装饰模型缩放常量
+    DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z, # 导入装饰模型缩放常量
+    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET  # 导入棋盘厚度模型缩放和位置偏移参数
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -264,12 +265,36 @@ class Gomoku_Start(ShowBase):
             self.squares[i].find("**/polygon").node().setIntoCollideMask(BitMask32.bit(1))
             self.squares[i].find("**/polygon").node().setTag('square', str(i))
         
+        # 为棋盘格子添加厚度
+        for square in self.squares:
+            square.setScale(square.getScale()[0], square.getScale()[1], 0.1)  # Z轴设置为0.1，增加厚度
+        
         # 绘制15x15五子棋网格线
         self._draw_gomoku_grid()
         
         # 创建棋盒
         self._setup_piece_boxes()
 
+        # 添加棋盘厚度模型并应用调节参数
+        from utils.constants import THICKNESS_SCALE, THICKNESS_POSITION_OFFSET
+        thickness_model = self.loader.loadModel("models/qi_pan.obj")
+        if thickness_model:
+            thickness_model.reparentTo(self.square_root)
+            thickness_model.setPos(
+                THICKNESS_POSITION_OFFSET[0],
+                THICKNESS_POSITION_OFFSET[1],
+                THICKNESS_POSITION_OFFSET[2]
+            )
+            thickness_model.setScale(
+                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[0],
+                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[1],
+                THICKNESS_SCALE[2]
+            )
+            thickness_model.setColor(0.71, 0.55, 0.35, 1)  # 设置为棕色
+            print("棋盘厚度模型创建成功")
+        else:
+            print("错误: 无法加载棋盘厚度模型")
+    
     def _setup_piece_boxes(self):
         """设置棋盒"""
         print("开始创建棋盒...")

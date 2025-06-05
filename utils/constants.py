@@ -79,3 +79,7 @@ DECORATION_SCALE_Z = 0.006  # Z轴缩放比例
 # 装饰模型的旋转和位置调节参数
 DECORATION_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)
 DECORATION_POSITION_OFFSET = (0, 0, 0)  # 默认位置偏移 (X, Y, Z)
+
+# 棋盘厚度模型的大小和位置调节参数
+THICKNESS_SCALE = (0.5, 5.75, 0.2)  # 默认缩放比例 (X, Y, Z)
+THICKNESS_POSITION_OFFSET = (0, 0, -0.21)  # 默认位置偏移 (X, Y, Z)

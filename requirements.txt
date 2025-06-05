@@ -1,3 +1,11 @@
 pygame
-padantic
+pydantic
 tqdm
+panda3d
+loguru
+requests
+pandas
+numpy
+pillow
+opencv-python
+scikit-learn

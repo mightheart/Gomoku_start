@@ -7,7 +7,7 @@ from utils.chessboard import ChessBoard
 from utils.constants import *
 from .ui import GameUI
 from Gomoku_ai_classical.ai import AIPlayer
-from utils import get_board_position_from_mouse
+from utils.utils import get_board_position_from_mouse
 
 class GobangGame:
     """五子棋游戏主类"""

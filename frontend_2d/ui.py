@@ -3,7 +3,7 @@
 """
 import pygame
 from utils.constants import *
-from utils import load_background_image, load_fonts
+from utils.utils import load_background_image, load_fonts
 
 class GameUI:
     """游戏界面类"""

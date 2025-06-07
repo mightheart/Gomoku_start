@@ -32,7 +32,11 @@ from utils.constants import (
     PIECE_BLACK, PIECE_WHITE,
     BACKGROUND_POSITION,  # 导入背景位置常量
     DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z, # 导入装饰模型缩放常量
-    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET  # 导入棋盘厚度模型缩放和位置偏移参数
+    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET,  # 导入棋盘厚度模型缩放和位置偏移参数
+    SKYDOME_MODEL_PATH, SKYDOME_SCALE, SKYDOME_COLOR, SKYDOME_BIN, SKYDOME_DEPTHWRITE, SKYDOME_LIGHTOFF, SKYDOME_RADIUS,
+    STAR_CONTAINER_NAME, STAR_BIN, STAR_DEPTHWRITE, STAR_LIGHTOFF,
+    STAR_POINTS_NODE_NAME, STAR_NUM, STAR_POINT_SIZE,
+    FALLBACK_SKY_FRAME, FALLBACK_SKY_P, FALLBACK_SKY_Z, FALLBACK_SKY_BIN, FALLBACK_SKY_DEPTHWRITE, FALLBACK_SKY_LIGHTOFF#导入星空相关常量参数
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -636,6 +640,7 @@ class Gomoku_Start(ShowBase):
         try:
             # 方法1：使用点精灵创建星空（最可靠）
             return self.create_star_sprites()
+
         except Exception as e:
             print(f"星空创建失败: {e}")
             # 方法2：使用简单平面纹理回退
@@ -644,82 +649,55 @@ class Gomoku_Start(ShowBase):
     def create_star_sprites(self):
         """使用点精灵创建3D星星 - 最可靠的方法"""
         print("使用点精灵创建星空")
-        # 创建天空球体
-        skydome = self.loader.loadModel("models/misc/sphere")
-        skydome.setScale(100)
+        skydome = self.loader.loadModel(SKYDOME_MODEL_PATH)
+        skydome.setScale(SKYDOME_SCALE)
         skydome.setTwoSided(True)
-        skydome.setColor(0, 0, 0, 1)
-        skydome.setBin("background", 0)
-        skydome.setDepthWrite(False)
-        skydome.setLightOff(1)
+        skydome.setColor(*SKYDOME_COLOR)
+        skydome.setBin(SKYDOME_BIN, 0)
+        skydome.setDepthWrite(SKYDOME_DEPTHWRITE)
+        skydome.setLightOff(SKYDOME_LIGHTOFF)
         skydome.reparentTo(self.render)
-        
-        # 创建星星容器
-        self.stars = self.render.attachNewNode("stars")
-        self.stars.setBin("background", 1)
-        self.stars.setDepthWrite(False)
-        self.stars.setLightOff(1)
-        
-        # 创建点精灵集合
-        self.star_points = GeomNode("star_points")
+
+        self.stars = self.render.attachNewNode(STAR_CONTAINER_NAME)
+        self.stars.setBin(STAR_BIN, 1)
+        self.stars.setDepthWrite(STAR_DEPTHWRITE)
+        self.stars.setLightOff(STAR_LIGHTOFF)
+
+        self.star_points = GeomNode(STAR_POINTS_NODE_NAME)
         star_points_np = self.stars.attachNewNode(self.star_points)
-        
-        # 创建顶点格式
+
         vformat = GeomVertexFormat.getV3c4()
         vdata = GeomVertexData("stars", vformat, Geom.UHStatic)
-        
-        # 添加顶点数据
         vertex = GeomVertexWriter(vdata, "vertex")
         color = GeomVertexWriter(vdata, "color")
-        
-        # 在球面上生成星星
-        num_stars = 2000
-        for _ in range(num_stars):
-            # 在球面上随机分布
-            theta = random.uniform(0, math.pi)  # 纬度
-            phi = random.uniform(0, 2 * math.pi)  # 经度
-            r = 95  # 半径，略小于天空球体
-            
-            # 计算位置
+
+        for _ in range(STAR_NUM):
+            theta = random.uniform(0, math.pi)
+            phi = random.uniform(0, 2 * math.pi)
+            r = SKYDOME_RADIUS
             x = r * math.sin(theta) * math.cos(phi)
             y = r * math.sin(theta) * math.sin(phi)
             z = r * math.cos(theta)
-            
-            # 添加顶点
             vertex.addData3f(x, y, z)
-            
-            # 随机亮度
             brightness = random.uniform(0.7, 1.0)
-            
-            # 随机颜色（大部分偏白，少数带颜色）
             if random.random() < 0.8:
-                r = g = b = brightness
+                rr = gg = bb = brightness
             else:
-                r = brightness * random.uniform(0.8, 1.0)
-                g = brightness * random.uniform(0.7, 0.9)
-                b = brightness * random.uniform(0.9, 1.0)
-            
-            color.addData4f(r, g, b, 1.0)
-        
-        # 创建点精灵图元
+                rr = brightness * random.uniform(0.8, 1.0)
+                gg = brightness * random.uniform(0.7, 0.9)
+                bb = brightness * random.uniform(0.9, 1.0)
+            color.addData4f(rr, gg, bb, 1.0)
+
         points = GeomPoints(Geom.UHStatic)
-        points.addConsecutiveVertices(0, num_stars)
+        points.addConsecutiveVertices(0, STAR_NUM)
         points.closePrimitive()
-        
-        # 创建几何体
         geom = Geom(vdata)
         geom.addPrimitive(points)
-        
-        # 添加到节点
         self.star_points.addGeom(geom)
-        
-        # 设置点精灵大小
         star_points_np.setAttrib(RenderModeAttrib.make(1))
-        star_points_np.setRenderModeThickness(3.0)  # 点的大小
-        
-        # 添加闪烁动画
+        star_points_np.setRenderModeThickness(STAR_POINT_SIZE)
         self.star_twinkle_task = self.taskMgr.add(self.twinkle_stars, "twinkleStars")
-        
+        print("使用点精灵创建星空成功")
         return self.stars
 
     def twinkle_stars(self, task):
@@ -821,4 +799,4 @@ class Gomoku_Start(ShowBase):
             print("使用纯深蓝色背景")
             return None
 
-        
+

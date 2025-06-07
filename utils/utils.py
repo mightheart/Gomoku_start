@@ -6,19 +6,16 @@ import os
 from utils.constants import *
 import time
 from functools import wraps
-from panda3d.core import Texture, CardMaker
-from direct.showbase.ShowBase import ShowBase
 
-def set_working_directory():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(current_dir)
-    
-set_working_directory()
+pygame.font.init()
+
+# 获取 frontend_2d 目录的绝对路径
+FRONTEND_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend_2d")
 
 def load_background_image():
     """加载背景图片"""
     try:
-        background_path = os.path.join("data", "background2.jpg")
+        background_path = os.path.join(FRONTEND_DIR, "data", "background1.jpg")
         background_image = pygame.image.load(background_path)
         background_image = pygame.transform.scale(background_image, (SCREEN_WIDTH, SCREEN_HEIGHT))
         return background_image
@@ -29,15 +26,15 @@ def load_background_image():
 def load_fonts():
     """加载字体"""
     try:
-        font_dir = 'font/'
-        font_large = pygame.font.Font(font_dir + '12345.TTF', 48)
-        font_medium = pygame.font.Font(font_dir + '12345.TTF', 36)
-        font_small = pygame.font.Font(font_dir + '12345.TTF', 24)
-    except:
+        font_path = os.path.join(FRONTEND_DIR, 'font', '12345.TTF')
+        font_large = pygame.font.Font(font_path, 48)
+        font_medium = pygame.font.Font(font_path, 36)
+        font_small = pygame.font.Font(font_path, 24)
+    except Exception as e:
+        print(f"自定义字体加载失败，使用系统字体: {e}")
         font_large = pygame.font.SysFont("simhei", 48)
         font_medium = pygame.font.SysFont("simhei", 36)
         font_small = pygame.font.SysFont("simhei", 24)
-    
     return font_large, font_medium, font_small
 
 def get_board_position_from_mouse(mouse_pos, board_x, board_y, board_size):

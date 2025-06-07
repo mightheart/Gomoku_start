@@ -1,7 +1,7 @@
 """
 五子棋人机对战主程序
 """
-from Gomoku_frontend.game import GobangGame
+from frontend_2d.game import GobangGame
 
 def main():
     """主函数"""

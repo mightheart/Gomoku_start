@@ -11,12 +11,16 @@ import time
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
-    LineSegs, RenderState, Texture, CardMaker, Material
+    LineSegs, RenderState, Texture, CardMaker, Material,SamplerState,
+    GeomNode,GeomVertexFormat,GeomVertexData,Geom,GeomVertexWriter,
+    GeomPoints,RenderModeAttrib,Shader,GeomVertexReader
 )
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import TextNode
 from direct.showbase import DirectObject
 import builtins  # 移到顶部统一管理
+import random
+import math
 
 from utils.constants import (
     CAMERA_INITIAL_POSITION, CAMERA_INITIAL_ANGLES,
@@ -28,7 +32,11 @@ from utils.constants import (
     PIECE_BLACK, PIECE_WHITE,
     BACKGROUND_POSITION,  # 导入背景位置常量
     DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z, # 导入装饰模型缩放常量
-    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET  # 导入棋盘厚度模型缩放和位置偏移参数
+    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET,  # 导入棋盘厚度模型缩放和位置偏移参数
+    SKYDOME_MODEL_PATH, SKYDOME_SCALE, SKYDOME_COLOR, SKYDOME_BIN, SKYDOME_DEPTHWRITE, SKYDOME_LIGHTOFF, SKYDOME_RADIUS,
+    STAR_CONTAINER_NAME, STAR_BIN, STAR_DEPTHWRITE, STAR_LIGHTOFF,
+    STAR_POINTS_NODE_NAME, STAR_NUM, STAR_POINT_SIZE,
+    FALLBACK_SKY_FRAME, FALLBACK_SKY_P, FALLBACK_SKY_Z, FALLBACK_SKY_BIN, FALLBACK_SKY_DEPTHWRITE, FALLBACK_SKY_LIGHTOFF#导入星空相关常量参数
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -75,7 +83,8 @@ class Gomoku_Start(ShowBase):
         
         # 加载并渲染背景图片
         self._load_and_render_background()
-    
+        self.load_ground()
+        self.load_space()
     def _setup_ui(self):
         """设置用户界面"""
         self.title = OnscreenText(
@@ -648,4 +657,179 @@ class Gomoku_Start(ShowBase):
         current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
         new_fov = min(120, current_fov + 2)  # 最大 FOV 限制为 120
         self.camLens.setFov(new_fov)
+    def load_ground(self):
+        """加载并渲染背景模型"""
+        try:
+            bg_model = self.loader.loadModel("models/kk.bam")
+            bg_model.reparentTo(self.render)
+            bg_model.setPos(0,0,-5)    # 可根据需要调整位置
+            bg_model.setScale(20)        # 可根据需要调整缩放
+            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
+            print("背景加载成功")
+        except Exception as e:
+            print(f"背景模型加载失败: {e}")
+
+    def load_space(self):
+        try:
+            # 方法1：使用点精灵创建星空（最可靠）
+            return self.create_star_sprites()
+
+        except Exception as e:
+            print(f"星空创建失败: {e}")
+            # 方法2：使用简单平面纹理回退
+            return self.create_fallback_sky_plane()
+
+    def create_star_sprites(self):
+        """使用点精灵创建3D星星 - 最可靠的方法"""
+        print("使用点精灵创建星空")
+        skydome = self.loader.loadModel(SKYDOME_MODEL_PATH)
+        skydome.setScale(SKYDOME_SCALE)
+        skydome.setTwoSided(True)
+        skydome.setColor(*SKYDOME_COLOR)
+        skydome.setBin(SKYDOME_BIN, 0)
+        skydome.setDepthWrite(SKYDOME_DEPTHWRITE)
+        skydome.setLightOff(SKYDOME_LIGHTOFF)
+        skydome.reparentTo(self.render)
+
+        self.stars = self.render.attachNewNode(STAR_CONTAINER_NAME)
+        self.stars.setBin(STAR_BIN, 1)
+        self.stars.setDepthWrite(STAR_DEPTHWRITE)
+        self.stars.setLightOff(STAR_LIGHTOFF)
+
+        self.star_points = GeomNode(STAR_POINTS_NODE_NAME)
+        star_points_np = self.stars.attachNewNode(self.star_points)
+
+        vformat = GeomVertexFormat.getV3c4()
+        vdata = GeomVertexData("stars", vformat, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+        color = GeomVertexWriter(vdata, "color")
+
+        for _ in range(STAR_NUM):
+            theta = random.uniform(0, math.pi)
+            phi = random.uniform(0, 2 * math.pi)
+            r = SKYDOME_RADIUS
+            x = r * math.sin(theta) * math.cos(phi)
+            y = r * math.sin(theta) * math.sin(phi)
+            z = r * math.cos(theta)
+            vertex.addData3f(x, y, z)
+            brightness = random.uniform(0.7, 1.0)
+            if random.random() < 0.8:
+                rr = gg = bb = brightness
+            else:
+                rr = brightness * random.uniform(0.8, 1.0)
+                gg = brightness * random.uniform(0.7, 0.9)
+                bb = brightness * random.uniform(0.9, 1.0)
+            color.addData4f(rr, gg, bb, 1.0)
+
+        points = GeomPoints(Geom.UHStatic)
+        points.addConsecutiveVertices(0, STAR_NUM)
+        points.closePrimitive()
+        geom = Geom(vdata)
+        geom.addPrimitive(points)
+        self.star_points.addGeom(geom)
+        star_points_np.setAttrib(RenderModeAttrib.make(1))
+        star_points_np.setRenderModeThickness(STAR_POINT_SIZE)
+        self.star_twinkle_task = self.taskMgr.add(self.twinkle_stars, "twinkleStars")
+        print("使用点精灵创建星空成功")
+        return self.stars
+
+    def twinkle_stars(self, task):
+        """星星闪烁动画效果"""
+        if hasattr(self, 'star_points'):
+            try:
+                geom = self.star_points.modifyGeom(0)
+                vdata = geom.modifyVertexData()
+                color_reader = GeomVertexReader(vdata, "color")
+                color_writer = GeomVertexWriter(vdata, "color")
+                num_vertices = vdata.getNumRows()
+                for i in range(num_vertices):
+                    color_reader.setRow(i)
+                    color_writer.setRow(i)
+                    r, g, b, a = color_reader.getData4f()
+                    if random.random() < 0.1:
+                        brightness_change = random.uniform(0.8, 1.2)
+                        r = min(1.0, max(0.0, r * brightness_change))
+                        g = min(1.0, max(0.0, g * brightness_change))
+                        b = min(1.0, max(0.0, b * brightness_change))
+                        color_writer.setData4f(r, g, b, a)
+                geom.setVertexData(vdata)
+            except Exception as e:
+                print(f"星星闪烁动画出错: {e}")
+        return task.cont
+
+    def create_fallback_sky_plane(self):
+        """创建简单的星空平面 - 回退方案"""
+        print("使用平面回退方案创建星空")
+        
+        try:
+            # 创建天空平面
+            cm = CardMaker("fallback_sky")
+            cm.setFrame(-100, 100, -100, 100)
+            sky = self.render.attachNewNode(cm.generate())
+            sky.setP(-90)  # 水平放置
+            sky.setZ(-50)
+            
+            # 设置渲染属性
+            sky.setBin("background", 1)
+            sky.setDepthWrite(False)
+            sky.setLightOff(1)
+            
+            # 创建简单的星空着色器
+            shader = Shader.make("""
+                #version 140
+                uniform mat4 p3d_ModelViewProjectionMatrix;
+                in vec4 p3d_Vertex;
+                in vec2 p3d_MultiTexCoord0;
+                out vec2 texcoord;
+                
+                void main() {
+                    gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
+                    texcoord = p3d_MultiTexCoord0;
+                }
+            """, """
+                #version 140
+                uniform sampler2D p3d_Texture0;
+                in vec2 texcoord;
+                out vec4 fragColor;
+                
+                void main() {
+                    // 深蓝色背景
+                    vec3 bgColor = vec3(0.0, 0.0, 0.05);
+                    
+                    // 生成星星
+                    float stars = 0.0;
+                    vec2 uv = texcoord * 100.0;  // 缩放纹理坐标
+                    
+                    // 使用噪声生成星星
+                    vec2 ipos = floor(uv);
+                    vec2 fpos = fract(uv);
+                    
+                    // 随机值生成
+                    float r = fract(sin(dot(ipos, vec2(127.1, 311.7))) * 43758.545);
+                    
+                    // 星星阈值
+                    if (r > 0.99) {
+                        // 星星大小和亮度
+                        float size = 0.05;
+                        float dist = length(fpos - 0.5);
+                        stars = smoothstep(size, 0.0, dist);
+                    }
+                    
+                    // 组合颜色
+                    vec3 color = mix(bgColor, vec3(1.0), stars);
+                    fragColor = vec4(color, 1.0);
+                }
+            """)
+            
+            # 应用着色器
+            sky.setShader(shader)
+            
+            return sky
+        except Exception as e:
+            print(f"平面回退方案失败: {e}")
+            # 最终回退：纯色背景
+            self.setBackgroundColor(0, 0, 0.05, 1)  # 深蓝色背景
+            print("使用纯深蓝色背景")
+            return None
+
 

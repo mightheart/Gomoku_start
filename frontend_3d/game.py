@@ -632,9 +632,9 @@ class Gomoku_Start(ShowBase):
             bg_model.setPos(0,0,-5)    # 可根据需要调整位置
             bg_model.setScale(20)        # 可根据需要调整缩放
             bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
-            print("背景加载成功")
+            print("地面模型加载成功")
         except Exception as e:
-            print(f"背景模型加载失败: {e}")
+            print(f"地面模型加载失败: {e}")
 
     def load_space(self):
         try:
@@ -715,9 +715,9 @@ class Gomoku_Start(ShowBase):
                     r, g, b, a = color_reader.getData4f()
                     if random.random() < 0.1:
                         brightness_change = random.uniform(0.8, 1.2)
-                        r = min(1.0, max(0.0, r * brightness_change))
-                        g = min(1.0, max(0.0, g * brightness_change))
-                        b = min(1.0, max(0.0, b * brightness_change))
+                        r = min(1.0, max(0.2, r * brightness_change))
+                        g = min(1.0, max(0.2, g * brightness_change))
+                        b = min(1.0, max(0.2, b * brightness_change))
                         color_writer.setData4f(r, g, b, a)
                 geom.setVertexData(vdata)
             except Exception as e:
@@ -731,15 +731,15 @@ class Gomoku_Start(ShowBase):
         try:
             # 创建天空平面
             cm = CardMaker("fallback_sky")
-            cm.setFrame(-100, 100, -100, 100)
+            cm.setFrame(FALLBACK_SKY_FRAME)
             sky = self.render.attachNewNode(cm.generate())
-            sky.setP(-90)  # 水平放置
-            sky.setZ(-50)
+            sky.setP(FALLBACK_SKY_P)  # 水平放置
+            sky.setZ(FALLBACK_SKY_Z)
             
             # 设置渲染属性
-            sky.setBin("background", 1)
-            sky.setDepthWrite(False)
-            sky.setLightOff(1)
+            sky.setBin(FALLBACK_SKY_BIN, 1)
+            sky.setDepthWrite(FALLBACK_SKY_DEPTHWRITE)
+            sky.setLightOff(FALLBACK_SKY_LIGHTOFF)
             
             # 创建简单的星空着色器
             shader = Shader.make("""

@@ -85,6 +85,8 @@ class Gomoku_Start(ShowBase):
         self._load_and_render_background()
         self.load_ground()
         self.load_space()
+
+        self.leidian()
     def _setup_ui(self):
         """设置用户界面"""
         self.title = OnscreenText(
@@ -316,7 +318,7 @@ class Gomoku_Start(ShowBase):
         
         # 加载对手模型并设置位置、缩放和旋转
         from utils.constants import OPPONENT_MODEL_PATH, OPPONENT_MODEL_POSITION, OPPONENT_MODEL_SCALE, OPPONENT_MODEL_ROTATION
-        opponent_model = self.loader.loadModel(OPPONENT_MODEL_PATH)
+        opponent_model = self.loader.loadModel("models/Raiden shogun.glb")
         if opponent_model:
             opponent_model.reparentTo(self.square_root)
             opponent_model.setPos(*OPPONENT_MODEL_POSITION)  # 设置位置
@@ -831,5 +833,17 @@ class Gomoku_Start(ShowBase):
             self.setBackgroundColor(0, 0, 0.05, 1)  # 深蓝色背景
             print("使用纯深蓝色背景")
             return None
+
+    def leidian(self):
+        """加载水豚噜噜模型"""
+        try:
+            leidian_model = self.loader.loadModel("models/lulu.glb")
+            leidian_model.reparentTo(self.render)
+            leidian_model.setPos(0,-20,5)    # 可根据需要调整位置
+            leidian_model.setScale(15)        # 可根据需要调整缩放
+            leidian_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度  
+            print("水豚噜噜模型加载成功")
+        except Exception as e:
+            print(f"水豚噜噜模型加载失败: {e}")
 
 

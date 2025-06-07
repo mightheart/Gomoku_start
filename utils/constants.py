@@ -86,9 +86,9 @@ THICKNESS_POSITION_OFFSET = (0, 0, -0.21)  # 默认位置偏移 (X, Y, Z)
 
 # 对手模型的路径、位置、缩放和旋转参数
 OPPONENT_MODEL_PATH = "models/opponent1.obj"  # 对手模型路径
-OPPONENT_MODEL_POSITION = (0, 15, -33)  # 默认位置 (X, Y, Z)
-OPPONENT_MODEL_SCALE = (25, 25, 25)  # 默认缩放比例 (X, Y, Z)
-OPPONENT_MODEL_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)
+OPPONENT_MODEL_POSITION = (0,20,-10)  # 默认位置 (X, Y, Z)
+OPPONENT_MODEL_SCALE = (15,15,15)  # 默认缩放比例 (X, Y, Z)
+OPPONENT_MODEL_ROTATION = (0, 0, 0)  # 默认旋转角度 (X, Y, Z)
 # 星空相关常量
 SKYDOME_MODEL_PATH = "models/misc/sphere"
 SKYDOME_SCALE = 1000

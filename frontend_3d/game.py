@@ -9,6 +9,7 @@ import sys
 import copy
 import time
 from direct.showbase.ShowBase import ShowBase
+from direct.actor.Actor import Actor
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
     LineSegs, RenderState, Texture, CardMaker, Material,SamplerState,
@@ -85,8 +86,8 @@ class Gomoku_Start(ShowBase):
         self._load_and_render_background()
         self.load_ground()
         self.load_space()
-
         self.leidian()
+        self.load_lulu()
     def _setup_ui(self):
         """设置用户界面"""
         self.title = OnscreenText(
@@ -835,15 +836,79 @@ class Gomoku_Start(ShowBase):
             return None
 
     def leidian(self):
+        """加载战士模型，并循环播放所有动画，基于播放状态切换"""
+        try:
+            leidian_model = Actor("models/zhanshi.glb")
+            leidian_model.reparentTo(self.render)
+            leidian_model.setPos(0, 0, 3)
+            leidian_model.setScale(100)
+            leidian_model.setHpr(90, -90, 0)
+            print("战士模型加载成功")
+
+            # 获取所有动画名
+            anims = leidian_model.getAnimNames()
+            print(f"检测到{len(anims)}个动画: {anims}")
+            
+            if not anims:
+                print("没有可用的动画")
+                return
+
+            # 创建光源
+            from panda3d.core import PointLight
+            plight = PointLight('leidian_light')
+            plight.setColor((1.5, 1.5, 1.5, 1))
+            plight_node = leidian_model.attachNewNode(plight)
+            plight_node.setPos(10, 10, 10)  # 光源在模型上方
+            leidian_model.setLight(plight_node)
+            
+            # 启动第一个动画（不循环）
+            leidian_model.loop(anims[0])
+            
+            # 保存到实例变量
+            self.leidian_model = leidian_model
+            self.leidian_anims = anims
+            self.current_anim_index = 0
+            
+            # 启动动画切换任务
+            self.leidian_task = self.taskMgr.add(self._check_anim_completion, "leidian_anim_check")
+            
+        except Exception as e:
+            print(f"战士模型加载失败: {e}")
+            import traceback
+            traceback.print_exc()
+
+    def _check_anim_completion(self, task):
+        """检查战士动画是否完成播放，完成后切换到下一个"""
+        if not self.leidian_model or self.leidian_model.isEmpty():
+            return task.done
+
+        anims = self.leidian_anims
+        if not anims:
+            return task.done
+
+        current_anim = anims[self.current_anim_index]
+        anim_control = self.leidian_model.getAnimControl(current_anim)
+        if anim_control is None or not anim_control.isPlaying():
+            # 动画已结束，切换到下一个
+            self.current_anim_index = (self.current_anim_index + 1) % len(anims)
+            next_anim = anims[self.current_anim_index]
+            self.leidian_model.stop()
+            self.leidian_model.loop(next_anim)
+            print(f"切换到下一个动画: {next_anim}")
+            # 添加短延迟防止重复触发
+            self.taskMgr.doMethodLater(0.1, lambda t: None, "leidian_delay")
+
+        return task.cont
+    
+    def load_lulu(self):
         """加载水豚噜噜模型"""
         try:
-            leidian_model = self.loader.loadModel("models/lulu.glb")
-            leidian_model.reparentTo(self.render)
-            leidian_model.setPos(0,-20,5)    # 可根据需要调整位置
-            leidian_model.setScale(15)        # 可根据需要调整缩放
-            leidian_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度  
+            bg_model = self.loader.loadModel("models/lulu.glb")
+            bg_model.reparentTo(self.render)
+            bg_model.setPos(0,-20,2)    # 可根据需要调整位置
+            bg_model.setScale(20)        # 可根据需要调整缩放
+            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
             print("水豚噜噜模型加载成功")
         except Exception as e:
-            print(f"水豚噜噜模型加载失败: {e}")
-
-
+            print(f"水豚噜噜加载失败: {e}")
+    

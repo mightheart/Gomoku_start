@@ -72,14 +72,20 @@ BOX_SIZE = 1              # 棋盒缩放比例
 BACKGROUND_POSITION = (0, 125, 5)  # 默认位置，便于调整
 
 # 装饰模型的轴向缩放比例
-DECORATION_SCALE_X = 0.006  # X轴缩放比例
-DECORATION_SCALE_Y = 0.006  # Y轴缩放比例
-DECORATION_SCALE_Z = 0.006  # Z轴缩放比例
+DECORATION_SCALE_X = 0.008  # X轴缩放比例
+DECORATION_SCALE_Y = 0.008  # Y轴缩放比例
+DECORATION_SCALE_Z = 0.008  # Z轴缩放比例
 
 # 装饰模型的旋转和位置调节参数
 DECORATION_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)
-DECORATION_POSITION_OFFSET = (0, 0, 0)  # 默认位置偏移 (X, Y, Z)
+DECORATION_POSITION_OFFSET = (0, 0, -0.3)  # 默认位置偏移 (X, Y, Z)
 
 # 棋盘厚度模型的大小和位置调节参数
 THICKNESS_SCALE = (0.5, 5.75, 0.2)  # 默认缩放比例 (X, Y, Z)
 THICKNESS_POSITION_OFFSET = (0, 0, -0.21)  # 默认位置偏移 (X, Y, Z)
+
+# 对手模型的路径、位置、缩放和旋转参数
+OPPONENT_MODEL_PATH = "models/opponent1.obj"  # 对手模型路径
+OPPONENT_MODEL_POSITION = (0, 15, -33)  # 默认位置 (X, Y, Z)
+OPPONENT_MODEL_SCALE = (25, 25, 25)  # 默认缩放比例 (X, Y, Z)
+OPPONENT_MODEL_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)

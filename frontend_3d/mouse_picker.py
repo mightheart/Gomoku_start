@@ -258,20 +258,9 @@ class MousePicker:
 
 
     def _get_piece_name(self, piece):
-        """获取棋子名称"""
+        """获取棋子的可读名称（用于调试）"""
         if not piece:
-            return "空"
+            return "Empty"
         
-        piece_type = piece.__class__.__name__
-        color = "白" if piece.obj.getColor()[0] > 0.5 else "黑"  # 简单的颜色判断
-        
-        piece_names = {
-            'Pawn': '兵',
-            'King': '王',
-            'Queen': '后',
-            'Bishop': '象',
-            'Knight': '马',
-            'Rook': '车'
-        }
-        
-        return f"{color}{piece_names.get(piece_type, piece_type)}"
+        color = "白" if piece.obj.getColor()[0] > 0.5 else "黑"
+        return f"{color}子"

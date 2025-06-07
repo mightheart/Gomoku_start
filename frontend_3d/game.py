@@ -140,6 +140,10 @@ class Gomoku_Start(ShowBase):
         # 鼠标控制
         self.accept("mouse1", self._grab_piece)
         self.accept("mouse1-up", self._release_piece)
+        
+        # 添加鼠标滚轮缩放功能
+        self.accept("wheel_up", self._zoom_in)
+        self.accept("wheel_down", self._zoom_out)
     
     def _handle_key_press(self, key):
         """处理键盘按下事件，检测三连击"""
@@ -239,8 +243,14 @@ class Gomoku_Start(ShowBase):
     def _setup_camera(self):
         """设置摄像机初始位置和角度"""
         self.disableMouse()
-        self.camera.setPosHpr(CAMERA_INITIAL_POSITION[0], CAMERA_INITIAL_POSITION[1], CAMERA_INITIAL_POSITION[2],
-                               CAMERA_INITIAL_ANGLES[0], CAMERA_INITIAL_ANGLES[1], CAMERA_INITIAL_ANGLES[2])
+        self.camera.setPos(CAMERA_INITIAL_POSITION[0], CAMERA_INITIAL_POSITION[1], CAMERA_INITIAL_POSITION[2])
+        self.camera.setHpr(CAMERA_INITIAL_ANGLES[0], CAMERA_INITIAL_ANGLES[1], CAMERA_INITIAL_ANGLES[2])
+
+        # 添加摄像机参数调整
+        self.camera.setX(self.camera.getX() + 0)  # 修改 X 轴位置
+        self.camera.setY(self.camera.getY() + -4)  # 修改 Y 轴位置
+        self.camera.setZ(self.camera.getZ() + 0)  # 修改 Z 轴位置
+        self.camera.setP(self.camera.getP() + 10)  # 修改俯仰角
     
     def _setup_lighting(self):
         """设置光照"""
@@ -303,6 +313,18 @@ class Gomoku_Start(ShowBase):
             print("棋盘厚度模型创建成功")
         else:
             print("错误: 无法加载棋盘厚度模型")
+        
+        # 加载对手模型并设置位置、缩放和旋转
+        from utils.constants import OPPONENT_MODEL_PATH, OPPONENT_MODEL_POSITION, OPPONENT_MODEL_SCALE, OPPONENT_MODEL_ROTATION
+        opponent_model = self.loader.loadModel(OPPONENT_MODEL_PATH)
+        if opponent_model:
+            opponent_model.reparentTo(self.square_root)
+            opponent_model.setPos(*OPPONENT_MODEL_POSITION)  # 设置位置
+            opponent_model.setScale(*OPPONENT_MODEL_SCALE)  # 设置缩放
+            opponent_model.setHpr(*OPPONENT_MODEL_ROTATION)  # 设置旋转
+            print("对手模型加载成功并应用参数")
+        else:
+            print("错误: 无法加载对手模型")
     
     def _setup_piece_boxes(self):
         """设置棋盒"""
@@ -624,6 +646,17 @@ class Gomoku_Start(ShowBase):
         black_decoration_model.setMaterial(black_material)
         black_decoration_model.setPos(BLACK_BOX_POS[0], BLACK_BOX_POS[1], BLACK_BOX_POS[2])
 
+    def _zoom_in(self):
+        """放大视角 (减小 FOV)"""
+        current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
+        new_fov = max(10, current_fov - 2)  # 最小 FOV 限制为 10
+        self.camLens.setFov(new_fov)
+
+    def _zoom_out(self):
+        """缩小视角 (增大 FOV)"""
+        current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
+        new_fov = min(120, current_fov + 2)  # 最大 FOV 限制为 120
+        self.camLens.setFov(new_fov)
     def load_ground(self):
         """加载并渲染背景模型"""
         try:

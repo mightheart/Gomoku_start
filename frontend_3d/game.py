@@ -11,12 +11,16 @@ import time
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
-    LineSegs, RenderState, Texture, CardMaker, Material
+    LineSegs, RenderState, Texture, CardMaker, Material,SamplerState,
+    GeomNode,GeomVertexFormat,GeomVertexData,Geom,GeomVertexWriter,
+    GeomPoints,RenderModeAttrib,Shader,GeomVertexReader
 )
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import TextNode
 from direct.showbase import DirectObject
 import builtins  # 移到顶部统一管理
+import random
+import math
 
 from utils.constants import (
     CAMERA_INITIAL_POSITION, CAMERA_INITIAL_ANGLES,
@@ -75,7 +79,8 @@ class Gomoku_Start(ShowBase):
         
         # 加载并渲染背景图片
         self._load_and_render_background()
-    
+        self.load_ground()
+        self.load_space()
     def _setup_ui(self):
         """设置用户界面"""
         self.title = OnscreenText(
@@ -615,3 +620,205 @@ class Gomoku_Start(ShowBase):
         black_decoration_model.setMaterial(black_material)
         black_decoration_model.setPos(BLACK_BOX_POS[0], BLACK_BOX_POS[1], BLACK_BOX_POS[2])
 
+    def load_ground(self):
+        """加载并渲染背景模型"""
+        try:
+            bg_model = self.loader.loadModel("models/kk.bam")
+            bg_model.reparentTo(self.render)
+            bg_model.setPos(0,0,-5)    # 可根据需要调整位置
+            bg_model.setScale(20)        # 可根据需要调整缩放
+            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
+            print("背景加载成功")
+        except Exception as e:
+            print(f"背景模型加载失败: {e}")
+
+    def load_space(self):
+        try:
+            # 方法1：使用点精灵创建星空（最可靠）
+            return self.create_star_sprites()
+        except Exception as e:
+            print(f"星空创建失败: {e}")
+            # 方法2：使用简单平面纹理回退
+            return self.create_fallback_sky_plane()
+
+    def create_star_sprites(self):
+        """使用点精灵创建3D星星 - 最可靠的方法"""
+        print("使用点精灵创建星空")
+        # 创建天空球体
+        skydome = self.loader.loadModel("models/misc/sphere")
+        skydome.setScale(100)
+        skydome.setTwoSided(True)
+        skydome.setColor(0, 0, 0, 1)
+        skydome.setBin("background", 0)
+        skydome.setDepthWrite(False)
+        skydome.setLightOff(1)
+        skydome.reparentTo(self.render)
+        
+        # 创建星星容器
+        self.stars = self.render.attachNewNode("stars")
+        self.stars.setBin("background", 1)
+        self.stars.setDepthWrite(False)
+        self.stars.setLightOff(1)
+        
+        # 创建点精灵集合
+        self.star_points = GeomNode("star_points")
+        star_points_np = self.stars.attachNewNode(self.star_points)
+        
+        # 创建顶点格式
+        vformat = GeomVertexFormat.getV3c4()
+        vdata = GeomVertexData("stars", vformat, Geom.UHStatic)
+        
+        # 添加顶点数据
+        vertex = GeomVertexWriter(vdata, "vertex")
+        color = GeomVertexWriter(vdata, "color")
+        
+        # 在球面上生成星星
+        num_stars = 2000
+        for _ in range(num_stars):
+            # 在球面上随机分布
+            theta = random.uniform(0, math.pi)  # 纬度
+            phi = random.uniform(0, 2 * math.pi)  # 经度
+            r = 95  # 半径，略小于天空球体
+            
+            # 计算位置
+            x = r * math.sin(theta) * math.cos(phi)
+            y = r * math.sin(theta) * math.sin(phi)
+            z = r * math.cos(theta)
+            
+            # 添加顶点
+            vertex.addData3f(x, y, z)
+            
+            # 随机亮度
+            brightness = random.uniform(0.7, 1.0)
+            
+            # 随机颜色（大部分偏白，少数带颜色）
+            if random.random() < 0.8:
+                r = g = b = brightness
+            else:
+                r = brightness * random.uniform(0.8, 1.0)
+                g = brightness * random.uniform(0.7, 0.9)
+                b = brightness * random.uniform(0.9, 1.0)
+            
+            color.addData4f(r, g, b, 1.0)
+        
+        # 创建点精灵图元
+        points = GeomPoints(Geom.UHStatic)
+        points.addConsecutiveVertices(0, num_stars)
+        points.closePrimitive()
+        
+        # 创建几何体
+        geom = Geom(vdata)
+        geom.addPrimitive(points)
+        
+        # 添加到节点
+        self.star_points.addGeom(geom)
+        
+        # 设置点精灵大小
+        star_points_np.setAttrib(RenderModeAttrib.make(1))
+        star_points_np.setRenderModeThickness(3.0)  # 点的大小
+        
+        # 添加闪烁动画
+        self.star_twinkle_task = self.taskMgr.add(self.twinkle_stars, "twinkleStars")
+        
+        return self.stars
+
+    def twinkle_stars(self, task):
+        """星星闪烁动画效果"""
+        if hasattr(self, 'star_points'):
+            try:
+                geom = self.star_points.modifyGeom(0)
+                vdata = geom.modifyVertexData()
+                color_reader = GeomVertexReader(vdata, "color")
+                color_writer = GeomVertexWriter(vdata, "color")
+                num_vertices = vdata.getNumRows()
+                for i in range(num_vertices):
+                    color_reader.setRow(i)
+                    color_writer.setRow(i)
+                    r, g, b, a = color_reader.getData4f()
+                    if random.random() < 0.1:
+                        brightness_change = random.uniform(0.8, 1.2)
+                        r = min(1.0, max(0.0, r * brightness_change))
+                        g = min(1.0, max(0.0, g * brightness_change))
+                        b = min(1.0, max(0.0, b * brightness_change))
+                        color_writer.setData4f(r, g, b, a)
+                geom.setVertexData(vdata)
+            except Exception as e:
+                print(f"星星闪烁动画出错: {e}")
+        return task.cont
+
+    def create_fallback_sky_plane(self):
+        """创建简单的星空平面 - 回退方案"""
+        print("使用平面回退方案创建星空")
+        
+        try:
+            # 创建天空平面
+            cm = CardMaker("fallback_sky")
+            cm.setFrame(-100, 100, -100, 100)
+            sky = self.render.attachNewNode(cm.generate())
+            sky.setP(-90)  # 水平放置
+            sky.setZ(-50)
+            
+            # 设置渲染属性
+            sky.setBin("background", 1)
+            sky.setDepthWrite(False)
+            sky.setLightOff(1)
+            
+            # 创建简单的星空着色器
+            shader = Shader.make("""
+                #version 140
+                uniform mat4 p3d_ModelViewProjectionMatrix;
+                in vec4 p3d_Vertex;
+                in vec2 p3d_MultiTexCoord0;
+                out vec2 texcoord;
+                
+                void main() {
+                    gl_Position = p3d_ModelViewProjectionMatrix * p3d_Vertex;
+                    texcoord = p3d_MultiTexCoord0;
+                }
+            """, """
+                #version 140
+                uniform sampler2D p3d_Texture0;
+                in vec2 texcoord;
+                out vec4 fragColor;
+                
+                void main() {
+                    // 深蓝色背景
+                    vec3 bgColor = vec3(0.0, 0.0, 0.05);
+                    
+                    // 生成星星
+                    float stars = 0.0;
+                    vec2 uv = texcoord * 100.0;  // 缩放纹理坐标
+                    
+                    // 使用噪声生成星星
+                    vec2 ipos = floor(uv);
+                    vec2 fpos = fract(uv);
+                    
+                    // 随机值生成
+                    float r = fract(sin(dot(ipos, vec2(127.1, 311.7))) * 43758.545);
+                    
+                    // 星星阈值
+                    if (r > 0.99) {
+                        // 星星大小和亮度
+                        float size = 0.05;
+                        float dist = length(fpos - 0.5);
+                        stars = smoothstep(size, 0.0, dist);
+                    }
+                    
+                    // 组合颜色
+                    vec3 color = mix(bgColor, vec3(1.0), stars);
+                    fragColor = vec4(color, 1.0);
+                }
+            """)
+            
+            # 应用着色器
+            sky.setShader(shader)
+            
+            return sky
+        except Exception as e:
+            print(f"平面回退方案失败: {e}")
+            # 最终回退：纯色背景
+            self.setBackgroundColor(0, 0, 0.05, 1)  # 深蓝色背景
+            print("使用纯深蓝色背景")
+            return None
+
+        

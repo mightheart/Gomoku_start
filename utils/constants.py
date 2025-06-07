@@ -69,7 +69,7 @@ BLACK_BOX_POS = (0, 6, 0)   # 黑棋盒位置
 BOX_SIZE = 1              # 棋盒缩放比例
 
 # 背景图片位置常量
-BACKGROUND_POSITION = (0, 125, 5)  # 默认位置，便于调整
+BACKGROUND_POSITION = (0, 100, 8)  # 默认位置，便于调整
 
 # 装饰模型的轴向缩放比例
 DECORATION_SCALE_X = 0.006  # X轴缩放比例

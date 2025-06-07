@@ -86,7 +86,7 @@ THICKNESS_POSITION_OFFSET = (0, 0, -0.21)  # 默认位置偏移 (X, Y, Z)
 
 # 星空相关常量
 SKYDOME_MODEL_PATH = "models/misc/sphere"
-SKYDOME_SCALE = 100
+SKYDOME_SCALE = 1000
 SKYDOME_COLOR = (0, 0, 0, 1)
 SKYDOME_BIN = "background"
 SKYDOME_DEPTHWRITE = False

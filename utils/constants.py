@@ -91,7 +91,7 @@ OPPONENT_MODEL_SCALE = (25, 25, 25)  # 默认缩放比例 (X, Y, Z)
 OPPONENT_MODEL_ROTATION = (0, 90, 0)  # 默认旋转角度 (X, Y, Z)
 # 星空相关常量
 SKYDOME_MODEL_PATH = "models/misc/sphere"
-SKYDOME_SCALE = 100
+SKYDOME_SCALE = 1000
 SKYDOME_COLOR = (0, 0, 0, 1)
 SKYDOME_BIN = "background"
 SKYDOME_DEPTHWRITE = False

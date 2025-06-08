@@ -118,5 +118,7 @@ FALLBACK_SKY_LIGHTOFF = 1
 
 # 音频常量
 SOUND_CLICK = "sound/place_piece.mp3"  # 下棋
-BGM_LIST = ["sound/bgm1.mp3", "sound/bgm2.wav", "sound/bgm3.mp3"]  # BGM列表
+BGM_LIST = ["sound/bgm1.mp3", "sound/bgm3.mp3", 
+            "sound/bgm2.wav", 
+            "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
 SOUND_VOLUME = 0.3  # BGM默认音量

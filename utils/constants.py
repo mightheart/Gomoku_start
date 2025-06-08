@@ -121,4 +121,6 @@ SOUND_CLICK = "sound/place_piece.mp3"  # 下棋
 BGM_LIST = ["sound/bgm1.mp3", "sound/bgm3.mp3", 
             "sound/bgm2.wav", 
             "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
+WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
+LOSER_MUSIC = "sound/loser_music.mp3"  # 失败音乐
 SOUND_VOLUME = 0.3  # BGM默认音量

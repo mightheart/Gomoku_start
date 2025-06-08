@@ -39,7 +39,7 @@ from utils.constants import (
     STAR_CONTAINER_NAME, STAR_BIN, STAR_DEPTHWRITE, STAR_LIGHTOFF,
     STAR_POINTS_NODE_NAME, STAR_NUM, STAR_POINT_SIZE,
     FALLBACK_SKY_FRAME, FALLBACK_SKY_P, FALLBACK_SKY_Z, FALLBACK_SKY_BIN, FALLBACK_SKY_DEPTHWRITE, FALLBACK_SKY_LIGHTOFF,#导入星空相关常量参数
-    BGM_LIST, SOUND_CLICK, SOUND_VOLUME  # 导入音频
+    BGM_LIST, SOUND_CLICK, SOUND_VOLUME, WINNER_MUSIC,LOSER_MUSIC  # 导入音频
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -458,16 +458,7 @@ class Gomoku_Start(ShowBase):
         self._render_all_pieces()
         
         # 检查胜利条件
-        if self.check_winner():
-            winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
-            print(f"🎉 Game Over! {winner} wins! Exiting in 3 seconds.")
-            # 隐藏AI思考提示（如果正在显示）
-            self._hide_ai_thinking()
-            # 屏幕上祝賀玩家
-            OnscreenText(text=f"{winner} wins! Exiting in 3 seconds.", pos=(0, 0), scale=0.1, fg=(1,0,0,1))
-            # 3秒后退出
-            self.taskMgr.doMethodLater(30, lambda task: self.userExit() or task.done, 'exit-task')
-            time.sleep(5)
+        if self._handle_game_over():
             return
         
         # AI回合判断
@@ -584,11 +575,55 @@ class Gomoku_Start(ShowBase):
         self.switch_player()
         
         # 检查胜利条件
-        if self.check_winner():
-            winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
-            print(f"🎉 Game Over! {winner} wins! Exiting in 3 seconds.")
-            OnscreenText(text=f"{winner} wins! Exiting in 3 seconds.", pos=(0, 0), scale=0.1, fg=(1,0,0,1))
-            self.taskMgr.doMethodLater(3, lambda task: self.userExit() or task.done, 'exit-task')
+        self._handle_game_over()
+
+    def _handle_game_over(self):
+        """统一处理游戏结束逻辑"""
+        if not self.check_winner():
+            return False
+        
+        winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
+        print(f"🎉 Game Over! {winner} wins!")
+        
+        # 隐藏AI思考提示（如果正在显示）
+        self._hide_ai_thinking()
+        
+        # 停止背景音乐
+        if self.current_bgm:
+            self.current_bgm.stop()
+        
+        # 根据玩家胜负播放相应音效
+        if (winner == "White" and not self.is_ai_enabled) or \
+        (winner == "White" and self.ai_side == PLAYER_BLACK) or \
+        (winner == "Black" and self.ai_side == PLAYER_WHITE):
+            # 玩家胜利
+            self._play_winner_music_sound()
+            victory_text = f"🎉 You Win! {winner} wins! Esc or enjoy music."
+            text_color = (0, 1, 0, 1)  # 绿色
+        else:
+            # 玩家失败（AI胜利）
+            self._play_loser_music_sound()
+            victory_text = f"😔 You Lose! AI ({winner}) wins! Esc or enjoy music."
+            text_color = (1, 0, 0, 1)  # 红色
+        
+        # 屏幕显示结果
+        self.game_over_text = OnscreenText(
+            text=victory_text, 
+            pos=(0, 0), 
+            scale=0.1, 
+            fg=text_color,
+            shadow=(0, 0, 0, 1)
+        )
+        
+        # 15秒后退出游戏
+        self.taskMgr.doMethodLater(15, self._exit_game, 'exit-task')
+        return True
+
+    def _exit_game(self, task):
+        """退出游戏"""
+        print("游戏结束，正在退出...")
+        self.userExit()
+        return task.done
 
     def _render_all_pieces(self):
         """根据chessboard重新渲染所有棋子"""
@@ -936,6 +971,14 @@ class Gomoku_Start(ShowBase):
                 print("下棋音效加载成功")
             else:
                 print("下棋音效加载失败")
+            
+            # 加载胜利和失败音效
+            self.winner_music = self.loader.loadSfx(WINNER_MUSIC)
+            self.loser_music = self.loader.loadSfx(LOSER_MUSIC)
+            if self.winner_music and self.loser_music:
+                print("胜利和失败音效加载成功")
+            else:
+                print("胜利或失败音效加载失败")
                 
             # 加载所有背景音乐
             bgm_files = BGM_LIST
@@ -962,6 +1005,8 @@ class Gomoku_Start(ShowBase):
         except Exception as e:
             print(f"音频加载失败: {e}")
             self.place_piece_sound = None
+            self.winner_music = None
+            self.loser_music = None
             self.bgm_list = []
         
     def _play_current_bgm(self):
@@ -998,3 +1043,13 @@ class Gomoku_Start(ShowBase):
         """播放下棋音效"""
         if self.place_piece_sound:
             self.place_piece_sound.play()
+
+    def _play_winner_music_sound(self):
+        """播放胜利音效"""
+        if self.winner_music:
+            self.winner_music.play()
+
+    def _play_loser_music_sound(self):
+        """播放失败音效"""
+        if self.loser_music:
+            self.loser_music.play()

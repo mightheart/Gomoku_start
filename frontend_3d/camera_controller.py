@@ -30,10 +30,10 @@ class CameraController:
             self._rotate_horizontal(dt, CAMERA_ROTATION_SPEED, camera)
             
         if self.key_map["cam-up"]:
-            self._rotate_vertical(dt, CAMERA_ROTATION_SPEED, camera)
+            self._rotate_vertical(dt, -CAMERA_ROTATION_SPEED, camera)
             
         if self.key_map["cam-down"]:
-            self._rotate_vertical(dt, -CAMERA_ROTATION_SPEED, camera)
+            self._rotate_vertical(dt, CAMERA_ROTATION_SPEED, camera)
     
     def _rotate_horizontal(self, dt, speed, camera):
         """水平旋转摄像机"""

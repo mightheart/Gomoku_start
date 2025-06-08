@@ -6,6 +6,7 @@ Panda3D 的事件系统需要传递方法引用，而不是直接调用
 """
 
 import sys
+import os
 import copy
 import time
 from direct.showbase.ShowBase import ShowBase
@@ -37,7 +38,8 @@ from utils.constants import (
     SKYDOME_MODEL_PATH, SKYDOME_SCALE, SKYDOME_COLOR, SKYDOME_BIN, SKYDOME_DEPTHWRITE, SKYDOME_LIGHTOFF, SKYDOME_RADIUS,
     STAR_CONTAINER_NAME, STAR_BIN, STAR_DEPTHWRITE, STAR_LIGHTOFF,
     STAR_POINTS_NODE_NAME, STAR_NUM, STAR_POINT_SIZE,
-    FALLBACK_SKY_FRAME, FALLBACK_SKY_P, FALLBACK_SKY_Z, FALLBACK_SKY_BIN, FALLBACK_SKY_DEPTHWRITE, FALLBACK_SKY_LIGHTOFF#导入星空相关常量参数
+    FALLBACK_SKY_FRAME, FALLBACK_SKY_P, FALLBACK_SKY_Z, FALLBACK_SKY_BIN, FALLBACK_SKY_DEPTHWRITE, FALLBACK_SKY_LIGHTOFF,#导入星空相关常量参数
+    BGM_LIST, SOUND_CLICK, SOUND_VOLUME  # 导入音频
 )
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
@@ -66,6 +68,11 @@ class Gomoku_Start(ShowBase):
         self.ai_player = AIPlayer()
         self.ai_thinking_text = None # AI思考状态显示
 
+        # 音频相关变量
+        self.bgm_list = []
+        self.current_bgm_index = 0
+        self.current_bgm = None
+
         # 三连击检测变量
         self.key_press_times = {}  # 存储每个键的按下时间
         self.key_press_counts = {}  # 存储每个键的连续按下次数
@@ -81,6 +88,7 @@ class Gomoku_Start(ShowBase):
         self._setup_board()
         self._setup_controllers()
         self._start_tasks()
+        self._setup_audio()
         
         # 加载并渲染背景图片
         self._load_and_render_background()
@@ -88,6 +96,7 @@ class Gomoku_Start(ShowBase):
         self.load_space()
         self.leidian()
         self.load_lulu()
+
     def _setup_ui(self):
         """设置用户界面"""
         self.title = OnscreenText(
@@ -197,14 +206,14 @@ class Gomoku_Start(ShowBase):
             self.auto_rotate_hint.destroy()
         
         direction_text = {
-            'cam-left': '左旋转',
-            'cam-right': '右旋转', 
-            'cam-up': '上旋转',
-            'cam-down': '下旋转'
+            'cam-left': 'Rotating Clockwise',
+            'cam-right': 'Rotating Anti-Clockwise', 
+            'cam-up': 'Rotating Upward',
+            'cam-down': 'Rotating Downward'
         }
         
         self.auto_rotate_hint = OnscreenText(
-            text=f"自动{direction_text.get(direction, '旋转')}中... (按空格键停止)",
+            text=f"{direction_text.get(direction, 'Rotating')}... (Press Space To Stop)",
             parent=self.a2dTopLeft, align=TextNode.ALeft,
             style=1, fg=(1, 1, 0, 1), pos=(0.06, -0.4), scale=.05)
 
@@ -439,6 +448,9 @@ class Gomoku_Start(ShowBase):
     
     def _update_gomoku_state(self, last_pos):
         """更新五子棋游戏状态"""
+        # 播放下棋音效
+        self._play_place_piece_sound()
+
         # 切换玩家
         self.switch_player()
         
@@ -562,6 +574,9 @@ class Gomoku_Start(ShowBase):
         self.chessboard = self.ai_player.get_next_chessboard(self.chessboard, self.ai_side)
         self._hide_ai_thinking() # 隐藏思考提示
         
+        # 播放AI下棋音效
+        self._play_place_piece_sound()
+
         # 重新渲染所有棋子
         self._render_all_pieces()
         
@@ -652,7 +667,7 @@ class Gomoku_Start(ShowBase):
     def _zoom_in(self):
         """放大视角 (减小 FOV)"""
         current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
-        new_fov = max(10, current_fov - 2)  # 最小 FOV 限制为 10
+        new_fov = max(10, current_fov - 2)  #f最小 FOV 限制为 10
         self.camLens.setFov(new_fov)
 
     def _zoom_out(self):
@@ -912,3 +927,74 @@ class Gomoku_Start(ShowBase):
         except Exception as e:
             print(f"水豚噜噜加载失败: {e}")
     
+    def _setup_audio(self):
+        """设置音频系统"""
+        try:
+            # 加载下棋音效
+            self.place_piece_sound = self.loader.loadSfx(SOUND_CLICK)
+            if self.place_piece_sound:
+                print("下棋音效加载成功")
+            else:
+                print("下棋音效加载失败")
+                
+            # 加载所有背景音乐
+            bgm_files = BGM_LIST
+            
+            for bgm_file in bgm_files:
+                if os.path.exists(bgm_file):
+                    bgm = self.loader.loadMusic(bgm_file)
+                    if bgm:
+                        self.bgm_list.append(bgm)
+                        print(f"背景音乐 {bgm_file} 加载成功")
+                    else:
+                        print(f"背景音乐 {bgm_file} 加载失败")
+                else:
+                    print(f"背景音乐文件 {bgm_file} 不存在")
+            
+            # 随机选择第一首背景音乐开始播放
+            if self.bgm_list:
+                self.current_bgm_index = random.randint(0, len(self.bgm_list) - 1)
+                print(f"随机选择第 {self.current_bgm_index + 1} 首背景音乐开始播放")
+                self._play_current_bgm()
+            else:
+                print("没有可用的背景音乐")
+                
+        except Exception as e:
+            print(f"音频加载失败: {e}")
+            self.place_piece_sound = None
+            self.bgm_list = []
+        
+    def _play_current_bgm(self):
+        """播放当前背景音乐"""
+        if self.bgm_list and 0 <= self.current_bgm_index < len(self.bgm_list):
+            # 停止当前播放的音乐
+            if self.current_bgm:
+                self.current_bgm.stop()
+            
+            # 播放新的背景音乐
+            self.current_bgm = self.bgm_list[self.current_bgm_index]
+            self.current_bgm.setVolume(SOUND_VOLUME)
+            self.current_bgm.play()
+            
+            # 监听音乐结束事件，自动切换到下一首
+            self.taskMgr.doMethodLater(
+                self.current_bgm.length(), 
+                self._switch_to_next_bgm, 
+                'bgm-switch-task'
+            )
+            
+            print(f"正在播放第 {self.current_bgm_index + 1} 首背景音乐")
+
+    def _switch_to_next_bgm(self, task):
+        """切换到下一首背景音乐"""
+        if self.bgm_list:
+            # 循环到下一首
+            self.current_bgm_index = (self.current_bgm_index + 1) % len(self.bgm_list)
+            print(f"切换到第 {self.current_bgm_index + 1} 首背景音乐")
+            self._play_current_bgm()
+        return task.done
+
+    def _play_place_piece_sound(self):
+        """播放下棋音效"""
+        if self.place_piece_sound:
+            self.place_piece_sound.play()

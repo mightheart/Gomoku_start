@@ -1,33 +1,45 @@
-This is a simple Gomoku_start interface.
-Only need pygame and numpy to run.
+# 五子棋游戏
 
-## 📁 项目结构
+一个基于Python的五子棋游戏，支持2D和3D两种游戏模式，包含AI对战功能。
 
-```
-Gomoku_ai_integrate/
-├── main.py              # 主程序入口
-├── game.py              # 游戏主类
-├── ai.py                # AI相关功能
-├── ui.py                # 界面绘制相关
-├── utils.py             # 工具函数
-├── constants.py         # 常量定义
-├── config_4.py          # AI配置
-└── data/
-    └──  # 资源文件
-└── font/
-    └──  # 字体文件
+## 运行方式
+
+```bash
+# 运行2D版本（推荐）
+python run_2d.py
+
+# 运行3D版本
+python run_3d.py
+
+# 3D版本遇到问题时使用安全模式
+python run_3d_safe_mode.py
 ```
 
-[//]: # (776)
+## 游戏引擎
 
-### 📃文件说明
+- pygame（2D版本）
+- panda3d（3D版本）
 
-- **main.py** - 启动游戏
-- **game.py** - 包含游戏主类 `GobangGame`，处理游戏逻辑
-- **ai.py** - AI算法实现，包含棋型评估和决策逻辑
-- **ui.py** - 用户界面相关功能，负责绘制游戏界面
-- **utils.py** - 通用工具函数，如坐标转换、胜负判断等
-- **constants.py** - 游戏常量定义，如颜色、尺寸等
-- **config_4.py** - AI配置文件，包含棋型评估模型
-- **data/** - 资源文件目录
-- **font/** - 字体文件目录
+## 项目结构
+
+```
+├── run_2d.py           # 2D版本启动文件
+├── run_3d.py           # 3D版本启动文件
+├── frontend_2d/        # 2D游戏界面
+│   ├── game.py         # 2D游戏主逻辑
+│   └── ui.py           # 2D界面绘制
+├── frontend_3d/        # 3D游戏界面
+│   └── game.py         # 3D游戏主逻辑
+├── utils/              # 工具模块
+│   ├── chessboard.py   # 棋盘逻辑
+│   └── gomoku_ai.py    # AI算法
+├── Gomoku_ai_classical/# 经典AI算法
+└── pieces/             # 棋子相关
+```
+
+## 游戏特色
+
+- 支持人机对战
+- 多种AI难度
+- 2D/3D双模式
+- 酷炫游戏界面

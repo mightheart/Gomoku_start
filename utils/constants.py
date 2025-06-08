@@ -6,7 +6,6 @@ SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 800
 CELL_SIZE = 40
 
-
 # 颜色定义 (2D游戏使用)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
@@ -50,6 +49,11 @@ CAMERA_ROTATION_SPEED = 30              # 视角旋转速度(度/秒)
 CAMERA_MAX_PITCH = -15                  # 最大俯仰角
 CAMERA_MIN_PITCH = -52                  # 最小俯仰角
 
+# 摄像机加速度控制常量
+CAMERA_ACCELERATION = 20.0             # 加速度系数（度/秒²）
+CAMERA_MAX_SPEED_MULTIPLIER = 100.0       # 最大速度倍数
+CAMERA_ACCELERATION_DELAY = 0.1      # 开始加速前的延迟时间（秒）
+
 # 棋盘常量
 BOARD_SIZE = 15                 # 棋盘大小 (15x15)
 PIECE_DRAG_HEIGHT = 0.5         # 棋子拖动高度
@@ -89,6 +93,7 @@ OPPONENT_MODEL_PATH = "models/opponent1.obj"  # 对手模型路径
 OPPONENT_MODEL_POSITION = (0,20,-10)  # 默认位置 (X, Y, Z)
 OPPONENT_MODEL_SCALE = (15,15,15)  # 默认缩放比例 (X, Y, Z)
 OPPONENT_MODEL_ROTATION = (0, 0, 0)  # 默认旋转角度 (X, Y, Z)
+
 # 星空相关常量
 SKYDOME_MODEL_PATH = "models/misc/sphere"
 SKYDOME_SCALE = 1000

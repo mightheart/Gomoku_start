@@ -3,7 +3,11 @@
 from panda3d.core import CollisionTraverser, CollisionNode, CollisionHandlerQueue, CollisionRay, BitMask32
 from panda3d.core import LineSegs
 from direct.task.Task import Task
-from utils.constants import HIGHLIGHT, PIECE_DRAG_HEIGHT, WHITE_3D, PIECEBLACK, TOTAL_SQUARES, HIGHLIGHT_INDICATOR_RADIUS, HIGHLIGHT_INDICATOR_SEGMENT, BOARD_SIZE, PLAYER_BLACK, PLAYER_WHITE
+from utils.constants import (
+    HIGHLIGHT, PIECE_DRAG_HEIGHT, WHITE_3D, PIECEBLACK, 
+    TOTAL_SQUARES, HIGHLIGHT_INDICATOR_RADIUS, HIGHLIGHT_INDICATOR_SEGMENT, BOARD_SIZE, PLAYER_BLACK, PLAYER_WHITE,
+    SOUND_DRAG  # 添加提子音效导入
+)
 from utils.helpers import square_color, point_at_z, square_pos, _get_piece_name
 from pieces.chess_pieces import Pawn
 
@@ -107,7 +111,11 @@ class MousePicker:
         if not self._can_create_piece(box_type):
             print(f"无法创建 {box_type} 棋子 - 不是当前玩家或棋子用完")
             return
-            
+
+        # 播放提子音效
+        if hasattr(self.game_instance, '_play_drag_piece_sound'):
+            self.game_instance._play_drag_piece_sound()
+
         # 创建临时棋子跟随鼠标
         color = WHITE_3D if box_type == 'white' else PIECEBLACK
         self.temp_piece = Pawn(-1, color, self.base)  # -1表示临时位置
@@ -148,7 +156,7 @@ class MousePicker:
             print(f"{piece_color}棋子放置在 {self._get_square_name(self.hi_sq)}")
             
             # 触发游戏状态更新和重新渲染
-            self.game_instance._update_gomoku_state(self.hi_sq)
+            self.game_instance.update_gomoku_state(self.hi_sq)
         else:
             print("棋子放置失败")
         

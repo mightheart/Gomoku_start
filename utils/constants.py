@@ -117,10 +117,53 @@ FALLBACK_SKY_DEPTHWRITE = False
 FALLBACK_SKY_LIGHTOFF = 1
 
 # 音频常量
-SOUND_CLICK = "sound/place_piece.mp3"  # 下棋
+SOUND_CLICK = "sound/place_piece.mp3"  # 落子
+SOUND_DRAG = "sound/drag_piece.mp3"    # 提子
 BGM_LIST = ["sound/bgm1.mp3", "sound/bgm3.mp3", 
             "sound/bgm2.wav", 
             "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
 WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
 LOSER_MUSIC = "sound/loser_music.mp3"  # 失败音乐
-SOUND_VOLUME = 0.3  # BGM默认音量
+SOUND_VOLUME = 0.8  # BGM默认音量
+
+# 游戏统计和功能常量
+MAX_UNDO_STEPS = 3                  # 最大悔棋次数
+PLAYER_THINK_TIME_LIMIT = 30        # 玩家思考时间限制（秒）
+STATISTICS_DISPLAY_TIME = 10        # 统计信息显示时间（秒）
+
+# 特效常量
+VICTORY_PARTICLE_COUNT = 100        # 胜利粒子数量
+VICTORY_PARTICLE_DURATION = 3.0     # 胜利特效持续时间
+FIREWORK_COLORS = [
+    (1, 0.8, 0, 1),    # 金色
+    (1, 0, 0, 1),      # 红色
+    (0, 1, 0, 1),      # 绿色
+    (0, 0, 1, 1),      # 蓝色
+    (1, 0, 1, 1),      # 紫色
+]
+
+# UI常量
+UI_TEXT_SCALE = 0.06
+UI_TEXT_SCALE_SMALL = 0.05
+
+# 统计信息位置（右上角）
+UI_STATS_POS = (1.3, 0.85)
+
+# 功能按钮位置（右侧中间）
+UI_FUNCTION_POS_BASE = (1.25, 0.2)
+UI_FUNCTION_SPACING = 0.12
+
+# 当前玩家提示位置（屏幕上方中央）
+UI_CURRENT_PLAYER_POS = (0, 0.9)
+
+# 游戏结束文本位置
+UI_GAME_OVER_POS = (0, 0)
+UI_GAME_OVER_SCALE = 0.08
+
+# UI颜色
+UI_COLOR_WHITE = (1, 1, 1, 1)
+UI_COLOR_YELLOW = (1, 1, 0, 1)
+UI_COLOR_CYAN = (0, 1, 1, 1)
+UI_COLOR_GREEN = (0, 1, 0, 1)
+UI_COLOR_RED = (1, 0, 0, 1)
+UI_COLOR_SHADOW = (0, 0, 0, 1)

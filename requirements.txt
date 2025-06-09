@@ -9,3 +9,4 @@ numpy
 pillow
 opencv-python
 scikit-learn
+panda3d-gltf

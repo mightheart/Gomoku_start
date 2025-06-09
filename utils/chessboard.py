@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Tuple
-from utils.constants import PIECE_EMPTY, PIECE_BLACK, PIECE_WHITE, PLAYER_BLACK, PLAYER_WHITE
+from utils.constants import PIECE_EMPTY, PIECE_BLACK, PIECE_WHITE, PLAYER_BLACK, PLAYER_WHITE, BOARD_SIZE
 
 class ChessBoard(BaseModel):
     size: int = Field(default=15, description="棋盘大小")
@@ -9,6 +9,8 @@ class ChessBoard(BaseModel):
     undo_stack: List[Tuple[int, int, int]] = Field(default_factory=list, description="撤回栈")
     winner: int = Field(default=0, description="获胜者")
     winning_line: List[Tuple[int, int]] = Field(default_factory=list, description="获胜连线")
+    winner_positions: List[Tuple[int, int]] = Field(default_factory=list, description="获胜的五个棋子位置")
+    board_size: int = Field(default=BOARD_SIZE, description="棋盘大小")
     
     def __init__(self, **data):
         super().__init__(**data)
@@ -217,4 +219,44 @@ class ChessBoard(BaseModel):
         self.winning_line = []
         return 0
 
-    
+    def get_winner_positions(self):
+        """获取获胜的五个棋子位置"""
+        return self.winner_positions
+
+    def check_winner(self):
+        """检查是否有玩家获胜"""
+        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
+        
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                # 修改这里：检查棋子是否不为空字符串而不是不为0
+                if self.board[i][j] != PIECE_EMPTY:
+                    player_piece = self.board[i][j]
+                    # 将棋子符号转换为玩家标识
+                    player = self.get_player_from_piece(player_piece)
+                    
+                    for dx, dy in directions:
+                        positions = [(i, j)]
+                        
+                        # 向一个方向检查
+                        x, y = i + dx, j + dy
+                        while (0 <= x < self.board_size and 
+                               0 <= y < self.board_size and 
+                               self.board[x][y] == player_piece):
+                            positions.append((x, y))
+                            x, y = x + dx, y + dy
+                        
+                        # 向相反方向检查
+                        x, y = i - dx, j - dy
+                        while (0 <= x < self.board_size and 
+                               0 <= y < self.board_size and 
+                               self.board[x][y] == player_piece):
+                            positions.append((x, y))
+                            x, y = x - dx, y - dy
+                        
+                        if len(positions) >= 5:
+                            self.winner = player
+                            self.winner_positions = positions[:5]  # 只取前5个
+                            return True
+        
+        return False

@@ -1,267 +1,91 @@
 """
-主游戏逻辑
-Panda3D 的事件系统需要传递方法引用，而不是直接调用
-涉及到软件设计中的封装和接口设计原则，主类中的函数均采用包装函数
-以便于在事件系统中使用，保持代码清晰和可维护
+主游戏逻辑 - 重构版本
 """
-
-import sys
-import os
-import copy
 import time
+import copy
+import builtins
 from direct.showbase.ShowBase import ShowBase
 from direct.actor.Actor import Actor
 from panda3d.core import (
     AmbientLight, DirectionalLight, LVector3, BitMask32,
-    LineSegs, RenderState, Texture, CardMaker, Material,SamplerState,
-    GeomNode,GeomVertexFormat,GeomVertexData,Geom,GeomVertexWriter,
-    GeomPoints,RenderModeAttrib,Shader,GeomVertexReader
+    LineSegs, CardMaker, Material, GeomNode, GeomVertexFormat,
+    GeomVertexData, Geom, GeomVertexWriter, GeomPoints, RenderModeAttrib
 )
-from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import TextNode
-from direct.showbase import DirectObject
-import builtins  # 移到顶部统一管理
-import random
-import math
 
-from utils.constants import (
-    CAMERA_INITIAL_POSITION, CAMERA_INITIAL_ANGLES,
-    WHITE_3D, PIECEBLACK, 
-    MAX_PIECES_PER_PLAYER,BOARD_SIZE,PIECE_DRAG_HEIGHT,TOTAL_SQUARES,
-    WHITE_BOX_POS, BLACK_BOX_POS, BOX_SIZE,
-    SQUARE_SCALE, TOTAL_SQUARES,
-    PLAYER_WHITE, PLAYER_BLACK,
-    PIECE_BLACK, PIECE_WHITE,
-    BACKGROUND_POSITION,  # 导入背景位置常量
-    DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z, # 导入装饰模型缩放常量
-    THICKNESS_SCALE, THICKNESS_POSITION_OFFSET,  # 导入棋盘厚度模型缩放和位置偏移参数
-    BGM_LIST, SOUND_CLICK, SOUND_VOLUME, WINNER_MUSIC,LOSER_MUSIC  # 导入音频
-)
+from utils.constants import *
 from utils.helpers import square_pos, square_color
 from utils.chessboard import ChessBoard
 from pieces.chess_pieces import Pawn
 from .camera_controller import CameraController
 from .mouse_picker import MousePicker
-from .create_sky import load_space
+from .audio_manager import AudioManager
+from .ui_manager import UIManager
+from .game_statistics import GameStatistics
+from .effects_manager import EffectsManager
+from .input_manager import InputManager
 from Gomoku_ai_classical.ai import AIPlayer
 
 class Gomoku_Start(ShowBase):
-    """五子棋游戏主类"""
+    """五子棋游戏主类 - 重构版本"""
     
     def __init__(self):
         ShowBase.__init__(self)
         
-        # 五子棋游戏状态
+        # 游戏状态
         self.current_player = PLAYER_WHITE
         self.white_pieces_count = MAX_PIECES_PER_PLAYER
         self.black_pieces_count = MAX_PIECES_PER_PLAYER
-
         self.is_ai_enabled = True
         self.ai_side = PLAYER_BLACK
-        self.chessboard = ChessBoard(size=BOARD_SIZE)  # 初始化棋盘对象
-
-        # 关键：初始化AI对象
+        self.game_over = False
+        
+        # 游戏组件
+        self.chessboard = ChessBoard(size=BOARD_SIZE)
         self.ai_player = AIPlayer()
-        self.ai_thinking_text = None # AI思考状态显示
-
-        # 音频相关变量
-        self.bgm_list = []
-        self.current_bgm_index = 0
-        self.current_bgm = None
-
-        # 三连击检测变量
-        self.key_press_times = {}  # 存储每个键的按下时间
-        self.key_press_counts = {}  # 存储每个键的连续按下次数
-        self.triple_click_threshold = 0.5  # 三连击时间阈值（秒）
-        self.auto_rotate_active = {}  # 存储自动旋转状态
-        self.auto_rotate_task = None  # 自动旋转任务
-
-        #创建天空
-        self.load_space = lambda: load_space(self)
+        
+        # 棋盘数据
+        self.squares = [None for _ in range(TOTAL_SQUARES)]
+        self.pieces = [None for _ in range(TOTAL_SQUARES)]
+        
+        # 初始化管理器
+        self._init_managers()
+        
         # 初始化游戏组件
-        self._setup_ui()
-        self._setup_input()
         self._setup_camera()
         self._setup_lighting()
         self._setup_board()
-        self._setup_controllers()
         self._start_tasks()
-        self._setup_audio()
         
-        # 加载并渲染背景图片
-        self._load_and_render_background()
-        #self.load_ground()
-        self.load_world()
-        self.load_space()
-        self.leidian()
-        self.load_lulu()
-
-    def _setup_ui(self):
-        """设置用户界面"""
-        self.title = OnscreenText(
-            text="Gomoku Game",  # 标题
-            style=1, fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1),
-            pos=(0.8, -0.95), scale=.07)
-        
-        self.escape_event = OnscreenText(
-            text="ESC: Exit Gomoku", parent=self.a2dTopLeft,
-            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.1),
-            align=TextNode.ALeft, scale=.05)
-        
-        self.mouse1_event = OnscreenText(
-            text="Left Click & Drag: Grab & Release Piece",
-            parent=self.a2dTopLeft, align=TextNode.ALeft,
-            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.16), scale=.05)
-        
-        self.camera_event1 = OnscreenText(
-            text="A/D: rotate camera left/right (Triple click for auto)",
-            parent=self.a2dTopLeft, align=TextNode.ALeft,
-            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.22), scale=.05)
-        
-        self.camera_event2 = OnscreenText(
-            text="W/S: rotate camera up/down (Triple click for auto)",
-            parent=self.a2dTopLeft, align=TextNode.ALeft,
-            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.28), scale=.05)
-        
-        self.space_event = OnscreenText(
-            text="SPACE: Stop auto rotation",
-            parent=self.a2dTopLeft, align=TextNode.ALeft,
-            style=1, fg=(1, 1, 1, 1), pos=(0.06, -0.34), scale=.05)
-        
-        # 创建AI思考状态文本（初始隐藏）
-        self._create_ai_thinking_text()
+        # 加载场景
+        self._load_scene()
     
-    def _setup_input(self):
-        """设置输入处理"""
-        self.accept('escape', sys.exit)
+    def _init_managers(self):
+        """初始化所有管理器"""
+        self.audio_manager = AudioManager(self.loader, self.taskMgr)
+        self.ui_manager = UIManager(self)
+        self.statistics = GameStatistics()
+        self.effects_manager = EffectsManager(self.render, self.taskMgr)
         
-        # 摄像机控制键位（修改为支持三连击检测）
-        self.accept("a", self._handle_key_press, ["cam-left"])
-        self.accept("a-up", self._set_camera_key, ["cam-left", False])
-        self.accept("d", self._handle_key_press, ["cam-right"])
-        self.accept("d-up", self._set_camera_key, ["cam-right", False])
-        self.accept("w", self._handle_key_press, ["cam-up"])
-        self.accept("w-up", self._set_camera_key, ["cam-up", False])
-        self.accept("s", self._handle_key_press, ["cam-down"])
-        self.accept("s-up", self._set_camera_key, ["cam-down", False])
+        # 创建控制器
+        self.camera_controller = CameraController()
+        self.mouse_picker = MousePicker(self)
         
-        # 添加空格键停止自动旋转
-        self.accept("space", self._stop_auto_rotate)
+        # 输入管理器需要在控制器创建后初始化
+        self.input_manager = InputManager(self, self.camera_controller)
         
-        # 鼠标控制
-        self.accept("mouse1", self._grab_piece)
-        self.accept("mouse1-up", self._release_piece)
-        
-        # 添加鼠标滚轮缩放功能
-        self.accept("wheel_up", self._zoom_in)
-        self.accept("wheel_down", self._zoom_out)
+        # 设置引用
+        self.mouse_picker.set_board_data(self.squares, self.pieces)
+        self.mouse_picker.set_game_instance(self)
     
-    def _handle_key_press(self, key):
-        """处理键盘按下事件，检测三连击"""
-        current_time = time.time()
-        
-        # 初始化键的记录
-        if key not in self.key_press_times:
-            self.key_press_times[key] = []
-            self.key_press_counts[key] = 0
-            self.auto_rotate_active[key] = False
-        
-        # 清理过期的按键记录
-        self.key_press_times[key] = [t for t in self.key_press_times[key] 
-                                    if current_time - t <= self.triple_click_threshold]
-        
-        # 记录当前按键时间
-        self.key_press_times[key].append(current_time)
-        
-        # 检测是否达到三连击
-        if len(self.key_press_times[key]) >= 3:
-            # 检查最近三次按键是否在时间阈值内
-            recent_times = self.key_press_times[key][-3:]
-            if recent_times[-1] - recent_times[0] <= self.triple_click_threshold:
-                print(f"检测到 {key} 三连击！开始自动旋转")
-                self._start_auto_rotate(key)
-                # 清空记录，避免重复触发
-                self.key_press_times[key] = []
-                return
-        
-        # 普通按键处理
-        self._set_camera_key(key, True)
-
-    def _start_auto_rotate(self, direction):
-        """开始自动旋转"""
-        # 停止之前的自动旋转
-        self._stop_auto_rotate()
-        
-        # 设置新的自动旋转方向
-        for key in self.auto_rotate_active:
-            self.auto_rotate_active[key] = False
-        self.auto_rotate_active[direction] = True
-        
-        # 启动自动旋转任务
-        self.auto_rotate_task = self.taskMgr.add(self._auto_rotate_task, 'autoRotateTask')
-        
-        # 显示提示信息
-        if hasattr(self, 'auto_rotate_hint'):
-            self.auto_rotate_hint.destroy()
-        
-        direction_text = {
-            'cam-left': 'Rotating Clockwise',
-            'cam-right': 'Rotating Anti-Clockwise', 
-            'cam-up': 'Rotating Upward',
-            'cam-down': 'Rotating Downward'
-        }
-        
-        self.auto_rotate_hint = OnscreenText(
-            text=f"{direction_text.get(direction, 'Rotating')}... (Press Space To Stop)",
-            parent=self.a2dTopLeft, align=TextNode.ALeft,
-            style=1, fg=(1, 1, 0, 1), pos=(0.06, -0.4), scale=.05)
-
-    def _stop_auto_rotate(self):
-        """停止自动旋转"""
-        # 停止自动旋转任务
-        if self.auto_rotate_task:
-            self.taskMgr.remove(self.auto_rotate_task)
-            self.auto_rotate_task = None
-        
-        # 重置所有自动旋转状态
-        for key in self.auto_rotate_active:
-            self.auto_rotate_active[key] = False
-        
-        # 停止所有摄像机键状态
-        self.camera_controller.set_key('cam-left', False)
-        self.camera_controller.set_key('cam-right', False)
-        self.camera_controller.set_key('cam-up', False)
-        self.camera_controller.set_key('cam-down', False)
-        
-        # 移除提示文本
-        if hasattr(self, 'auto_rotate_hint'):
-            self.auto_rotate_hint.destroy()
-            delattr(self, 'auto_rotate_hint')
-        
-        print("自动旋转已停止")
-
-    def _auto_rotate_task(self, task):
-        """自动旋转任务"""
-        # 检查哪个方向需要自动旋转
-        for direction, active in self.auto_rotate_active.items():
-            if active:
-                self.camera_controller.set_key(direction, True)
-            else:
-                self.camera_controller.set_key(direction, False)
-        
-        return task.cont
-
     def _setup_camera(self):
-        """设置摄像机初始位置和角度"""
+        """设置摄像机"""
         self.disableMouse()
-        self.camera.setPos(CAMERA_INITIAL_POSITION[0], CAMERA_INITIAL_POSITION[1], CAMERA_INITIAL_POSITION[2])
-        self.camera.setHpr(CAMERA_INITIAL_ANGLES[0], CAMERA_INITIAL_ANGLES[1], CAMERA_INITIAL_ANGLES[2])
-
-        # 添加摄像机参数调整
-        self.camera.setX(self.camera.getX() + 0)  # 修改 X 轴位置
-        self.camera.setY(self.camera.getY() + -4)  # 修改 Y 轴位置
-        self.camera.setZ(self.camera.getZ() + 0)  # 修改 Z 轴位置
-        self.camera.setP(self.camera.getP() + 10)  # 修改俯仰角
+        self.camera.setPos(*CAMERA_INITIAL_POSITION)
+        self.camera.setHpr(*CAMERA_INITIAL_ANGLES)
+        self.camera.setX(self.camera.getX() + 0)
+        self.camera.setY(self.camera.getY() + -4)
+        self.camera.setZ(self.camera.getZ() + 0)
+        self.camera.setP(self.camera.getP() + 10)
     
     def _setup_lighting(self):
         """设置光照"""
@@ -276,12 +100,8 @@ class Gomoku_Start(ShowBase):
         self.render.setLight(self.render.attachNewNode(ambient_light))
     
     def _setup_board(self):
-        """设置15x15五子棋棋盘"""
+        """设置棋盘"""
         self.square_root = self.render.attachNewNode("squareRoot")
-        
-        # 15x15棋盘，225个格子
-        self.squares = [None for _ in range(TOTAL_SQUARES)]
-        self.pieces = [None for _ in range(TOTAL_SQUARES)]  # 保留用于渲染
         
         # 创建棋盘格子
         for i in range(TOTAL_SQUARES):
@@ -289,7 +109,7 @@ class Gomoku_Start(ShowBase):
             self.squares[i].reparentTo(self.square_root)
             self.squares[i].setPos(square_pos(i))
             self.squares[i].setColor(square_color(i))
-            self.squares[i].setScale(SQUARE_SCALE)  # 缩放格子
+            self.squares[i].setScale(SQUARE_SCALE)
             
             # 设置碰撞检测
             self.squares[i].find("**/polygon").node().setIntoCollideMask(BitMask32.bit(1))
@@ -297,349 +117,436 @@ class Gomoku_Start(ShowBase):
         
         # 为棋盘格子添加厚度
         for square in self.squares:
-            square.setScale(square.getScale()[0], square.getScale()[1], 0.1)  # Z轴设置为0.1，增加厚度
+            square.setScale(square.getScale()[0], square.getScale()[1], 0.1)
         
-        # 绘制15x15五子棋网格线
+        # 绘制网格线
         self._draw_gomoku_grid()
         
         # 创建棋盒
         self._setup_piece_boxes()
-
-        # 添加棋盘厚度模型并应用调节参数
-        from utils.constants import THICKNESS_SCALE, THICKNESS_POSITION_OFFSET
-        thickness_model = self.loader.loadModel("models/qi_pan.obj")
-        if thickness_model:
-            thickness_model.reparentTo(self.square_root)
-            thickness_model.setPos(
-                THICKNESS_POSITION_OFFSET[0],
-                THICKNESS_POSITION_OFFSET[1],
-                THICKNESS_POSITION_OFFSET[2]
-            )
-            thickness_model.setScale(
-                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[0],
-                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[1],
-                THICKNESS_SCALE[2]
-            )
-            thickness_model.setColor(0.71, 0.55, 0.35, 1)  # 设置为棕色
-            print("棋盘厚度模型创建成功")
-        else:
-            print("错误: 无法加载棋盘厚度模型")
         
-        # 加载对手模型并设置位置、缩放和旋转
-        from utils.constants import OPPONENT_MODEL_PATH, OPPONENT_MODEL_POSITION, OPPONENT_MODEL_SCALE, OPPONENT_MODEL_ROTATION
-        opponent_model = self.loader.loadModel("models/Raiden shogun.glb")
-        if opponent_model:
-            opponent_model.reparentTo(self.square_root)
-            opponent_model.setPos(*OPPONENT_MODEL_POSITION)  # 设置位置
-            opponent_model.setScale(*OPPONENT_MODEL_SCALE)  # 设置缩放
-            opponent_model.setHpr(*OPPONENT_MODEL_ROTATION)  # 设置旋转
-            print("对手模型加载成功并应用参数")
-        else:
-            print("错误: 无法加载对手模型")
-    
-    def _setup_piece_boxes(self):
-        """设置棋盒"""
-        print("开始创建棋盒...")
-    
-        # 创建白棋盒
-        self.white_box = self.loader.loadModel("models/square")
-        if self.white_box:
-            self.white_box.reparentTo(self.render)
-            self.white_box.setPos(WHITE_BOX_POS)
-            self.white_box.setTransparency(True)
-            self.white_box.setColor(1, 1, 1, 0)  # 设置白棋盒为透明
-            self.white_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
-            
-            # 设置碰撞检测
-            polygon_node = self.white_box.find("**/polygon")
-            if polygon_node:
-                polygon_node.node().setIntoCollideMask(BitMask32.bit(1))
-                polygon_node.node().setTag('piece_box', 'white')
-                print(f"白棋盒创建成功，位置: {WHITE_BOX_POS}")
-            else:
-                print("警告: 白棋盒没有找到碰撞多边形")
-        else:
-            print("错误: 无法加载白棋盒模型")
-        
-        # 创建黑棋盒
-        self.black_box = self.loader.loadModel("models/square")
-        if self.black_box:
-            self.black_box.reparentTo(self.render)
-            self.black_box.setPos(BLACK_BOX_POS)
-            self.black_box.setTransparency(True)
-            self.black_box.setColor(1, 1, 1, 0)  # 设置黑棋盒为透明
-            self.black_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
-            
-            # 设置碰撞检测
-            polygon_node = self.black_box.find("**/polygon")
-            if polygon_node:
-                polygon_node.node().setIntoCollideMask(BitMask32.bit(1))
-                polygon_node.node().setTag('piece_box', 'black')
-                print(f"黑棋盒创建成功，位置: {BLACK_BOX_POS}")
-            else:
-                print("警告: 黑棋盒没有找到碰撞多边形")
-        else:
-            print("错误: 无法加载黑棋盒模型")
-
-        # 创建白棋盒装饰模型
-        decoration_model_white = self.loader.loadModel("models/qihe.obj")
-        if decoration_model_white:
-            decoration_model_white.reparentTo(self.render)
-            decoration_model_white.setPos(WHITE_BOX_POS)
-            decoration_model_white.setColor(WHITE_3D)
-            decoration_model_white.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
-            white_material = Material()
-            white_material.setDiffuse(WHITE_3D)
-            decoration_model_white.setMaterial(white_material)
-            print("白棋盒装饰模型创建成功")
-        else:
-            print("错误: 无法加载白棋盒装饰模型")
-
-        # 创建黑棋盒装饰模型
-        decoration_model_black = self.loader.loadModel("models/qihe.obj")
-        if decoration_model_black:
-            decoration_model_black.reparentTo(self.render)
-            decoration_model_black.setPos(BLACK_BOX_POS)
-            decoration_model_black.setColor(PIECEBLACK)
-            decoration_model_black.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
-            black_material = Material()
-            black_material.setDiffuse(PIECEBLACK)
-            decoration_model_black.setMaterial(black_material)
-            print("黑棋盒装饰模型创建成功")
-        else:
-            print("错误: 无法加载黑棋盒装饰模型")
-
-        # 应用装饰模型的旋转和位置偏移
-        from utils.constants import DECORATION_ROTATION, DECORATION_POSITION_OFFSET
-        decoration_model_white.setHpr(DECORATION_ROTATION)
-        decoration_model_white.setPos(
-            WHITE_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
-            WHITE_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
-            WHITE_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
-        )
-
-        decoration_model_black.setHpr(DECORATION_ROTATION)
-        decoration_model_black.setPos(
-            BLACK_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
-            BLACK_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
-            BLACK_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
-        )
-
-    def switch_player(self):
-        """切换玩家"""
-        # 切换玩家
-        if self.current_player == PLAYER_WHITE:
-            self.white_pieces_count -= 1
-            self.current_player = PLAYER_BLACK
-            print(f"轮到黑方下棋 (剩余棋子: {self.black_pieces_count})")
-        else:
-            self.black_pieces_count -= 1
-            self.current_player = PLAYER_WHITE
-            print(f"轮到白方下棋 (剩余棋子: {self.white_pieces_count})")
-        
-    def check_winner(self):
-        """检查是否有玩家获胜"""
-        if self.chessboard.check_board_winner():
-            if self.chessboard.winner != 0:
-                print(f"玩家{self.chessboard.winner}获胜！")
-                return True
-            return False
-    
-    def _update_gomoku_state(self, last_pos):
-        """更新五子棋游戏状态"""
-        # 播放下棋音效
-        self._play_place_piece_sound()
-
-        # 切换玩家
-        self.switch_player()
-        
-        # 重新渲染所有棋子
-        self._render_all_pieces()
-        
-        # 检查胜利条件
-        if self._handle_game_over():
-            return
-        
-        # AI回合判断
-        if self.is_ai_enabled and self.current_player == self.ai_side:
-            # 显示AI思考状态，延迟执行AI移动
-            self._show_ai_thinking()
-            # 延迟1秒执行AI移动，让玩家看到思考提示
-            self.taskMgr.doMethodLater(0.1, self._delayed_ai_move, 'ai-move-task')
+        # 加载棋盘装饰
+        self._load_board_decorations()
     
     def _draw_gomoku_grid(self):
-        """绘制15x15五子棋网格线"""
+        """绘制网格线"""
         lines = LineSegs()
-        lines.setThickness(1.5)  # 稍微细一点
+        lines.setThickness(1.5)
         lines.setColor(0, 0, 0, 1)
         
-        # 计算网格范围：从-7到+7，共15条线
-        grid_range = 7 * SQUARE_SCALE  # 网格的边界
+        grid_range = 7 * SQUARE_SCALE
         
-        # 绘制横线 (15条)
+        # 横线
         for row in range(BOARD_SIZE):
             y_pos = grid_range - row * SQUARE_SCALE
             lines.moveTo(-grid_range, y_pos, 0.01)
             lines.drawTo(grid_range, y_pos, 0.01)
         
-        # 绘制竖线 (15条)
+        # 竖线
         for col in range(BOARD_SIZE):
             x_pos = -grid_range + col * SQUARE_SCALE
             lines.moveTo(x_pos, grid_range, 0.01)
             lines.drawTo(x_pos, -grid_range, 0.01)
         
-        # 创建线条节点并添加到场景
         grid_node = self.render.attachNewNode(lines.create())
         grid_node.reparentTo(self.square_root)
     
-    def _setup_controllers(self):
-        """设置控制器"""
-        self.camera_controller = CameraController()
-        self.mouse_picker = MousePicker(self)
-        self.mouse_picker.set_board_data(self.squares, self.pieces)
-        # 添加游戏实例引用，让鼠标拾取器能访问游戏状态
-        self.mouse_picker.set_game_instance(self)
+    def _setup_piece_boxes(self):
+        """设置棋盒"""
+        # 白棋盒
+        self.white_box = self.loader.loadModel("models/square")
+        if self.white_box:
+            self.white_box.reparentTo(self.render)
+            self.white_box.setPos(WHITE_BOX_POS)
+            self.white_box.setTransparency(True)
+            self.white_box.setColor(1, 1, 1, 0)
+            self.white_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
+            
+            polygon_node = self.white_box.find("**/polygon")
+            if polygon_node:
+                polygon_node.node().setIntoCollideMask(BitMask32.bit(1))
+                polygon_node.node().setTag('piece_box', 'white')
+        
+        # 黑棋盒
+        self.black_box = self.loader.loadModel("models/square")
+        if self.black_box:
+            self.black_box.reparentTo(self.render)
+            self.black_box.setPos(BLACK_BOX_POS)
+            self.black_box.setTransparency(True)
+            self.black_box.setColor(1, 1, 1, 0)
+            self.black_box.setScale(BOX_SIZE, BOX_SIZE, 0.2)
+            
+            polygon_node = self.black_box.find("**/polygon")
+            if polygon_node:
+                polygon_node.node().setIntoCollideMask(BitMask32.bit(1))
+                polygon_node.node().setTag('piece_box', 'black')
+        
+        # 加载棋盒装饰
+        self._load_piece_box_decorations()
+    
+    def _load_board_decorations(self):
+        """加载棋盘装饰"""
+        # 棋盘厚度模型
+        thickness_model = self.loader.loadModel("models/qi_pan.obj")
+        if thickness_model:
+            thickness_model.reparentTo(self.square_root)
+            thickness_model.setPos(*THICKNESS_POSITION_OFFSET)
+            thickness_model.setScale(
+                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[0],
+                BOARD_SIZE * SQUARE_SCALE * THICKNESS_SCALE[1],
+                THICKNESS_SCALE[2]
+            )
+            thickness_model.setColor(0.71, 0.55, 0.35, 1)
+        
+        # 对手模型
+        opponent_model = self.loader.loadModel("models/Raiden shogun.glb")
+        if opponent_model:
+            opponent_model.reparentTo(self.square_root)
+            opponent_model.setPos(*OPPONENT_MODEL_POSITION)
+            opponent_model.setScale(*OPPONENT_MODEL_SCALE)
+            opponent_model.setHpr(*OPPONENT_MODEL_ROTATION)
+    
+    def _load_piece_box_decorations(self):
+        """加载棋盒装饰"""
+        # 白棋盒装饰
+        decoration_white = self.loader.loadModel("models/qihe.obj")
+        if decoration_white:
+            decoration_white.reparentTo(self.render)
+            decoration_white.setPos(
+                WHITE_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
+                WHITE_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
+                WHITE_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
+            )
+            decoration_white.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
+            decoration_white.setHpr(*DECORATION_ROTATION)
+            decoration_white.setColor(WHITE_3D)
+        
+        # 黑棋盒装饰
+        decoration_black = self.loader.loadModel("models/qihe.obj")
+        if decoration_black:
+            decoration_black.reparentTo(self.render)
+            decoration_black.setPos(
+                BLACK_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
+                BLACK_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
+                BLACK_BOX_POS[2] + DECORATION_POSITION_OFFSET[2]
+            )
+            decoration_black.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
+            decoration_black.setHpr(*DECORATION_ROTATION)
+            decoration_black.setColor(PIECEBLACK)
     
     def _start_tasks(self):
         """启动任务"""
         self.mouse_task = self.taskMgr.add(self._mouse_task, 'mouseTask')
         self.move_task = self.taskMgr.add(self._move_task, 'move')
     
-    def _set_camera_key(self, key, value):
-        """设置摄像机控制键状态"""
-        self.camera_controller.set_key(key, value)
-    
-    def _grab_piece(self):
-        """抓取棋子"""
-        self.mouse_picker.grab_piece()
-    
-    def _release_piece(self):
-        """释放棋子"""
-        self.mouse_picker.release_piece()
-    
     def _mouse_task(self, task):
         """鼠标任务"""
         return self.mouse_picker.update(self.mouseWatcherNode, self.square_root)
     
     def _move_task(self, task):
-        """摄像机移动任务"""
-        # 使用全局时钟获取帧间隔时间
+        """主循环任务"""
         dt = builtins.globalClock.getDt()
         self.camera_controller.update(dt)
+        
+        if not self.game_over:
+            self.statistics.update_player_time(self.current_player, self.game_over)
+            game_data = self.statistics.get_game_data()
+            self.ui_manager.update_statistics(game_data)
+            self.ui_manager.update_current_player(
+                self.current_player, self.is_ai_enabled, self.ai_side, self.game_over)
+        
         return task.cont
-
-    def _create_ai_thinking_text(self):
-        """创建AI思考状态显示文本"""
-        self.ai_thinking_text = OnscreenText(
-            text="AI thinking......",
-            parent=self.a2dTopRight,
-            align=TextNode.ARight,
-            style=1, 
-            fg=(1, 1, 0, 1),  # 黄色文字
-            shadow=(0, 0, 0, 1),  # 黑色阴影
-            pos=(-0.06, -0.1),  # 右上角位置
-            scale=0.06
-        )
-        self.ai_thinking_text.hide()  # 初始隐藏
-
-    def _show_ai_thinking(self):
-        """显示AI思考状态"""
-        if self.ai_thinking_text:
-            self.ai_thinking_text.show()
-
-    def _hide_ai_thinking(self):
-        """隐藏AI思考状态"""
-        if self.ai_thinking_text:
-            self.ai_thinking_text.hide()
-
+    
+    def _load_scene(self):
+        """加载场景模型"""
+        # 背景
+        try:
+            background_texture = self.loader.loadTexture("models/background2.jpg")
+            card_maker = CardMaker("background")
+            card_maker.setFrame(-1, 1, -1, 1)
+            background_card = self.render.attachNewNode(card_maker.generate())
+            background_card.setTexture(background_texture)
+            background_card.setPos(*BACKGROUND_POSITION)
+            background_card.setScale(20)
+        except Exception as e:
+            print(f"背景加载失败: {e}")
+        
+        # 地面
+        try:
+            ground_model = self.loader.loadModel("models/kk.bam")
+            ground_model.reparentTo(self.render)
+            ground_model.setPos(0, 0, -5)
+            ground_model.setScale(20)
+            ground_model.setHpr(180, 0, 0)
+        except Exception as e:
+            print(f"地面模型加载失败: {e}")
+        
+        # 角色模型
+        self._load_character_models()
+        
+        # 星空
+        self._load_starfield()
+    
+    def _load_character_models(self):
+        """加载角色模型"""
+        # 雷电将军
+        try:
+            self.leidian_model = Actor("models/yae-miko_genshin-impact.bam")
+            self.leidian_model.reparentTo(self.render)
+            self.leidian_model.setPos(-15, 20, -10)
+            self.leidian_model.setScale(15)
+            
+            self.leidian_anims = self.leidian_model.getAnimNames()
+            self.current_anim_index = 0
+            
+            if self.leidian_anims:
+                self.leidian_model.play(self.leidian_anims[self.current_anim_index])
+                self.taskMgr.add(self._check_anim_completion, "checkAnimCompletion")
+        except Exception as e:
+            print(f"雷电将军模型加载失败: {e}")
+        
+        # 瑶瑶
+        try:
+            self.yaoyao_model = self.loader.loadModel("models/Yaoyao - Genshin Impact.bam")
+            self.yaoyao_model.reparentTo(self.render)
+            self.yaoyao_model.setPos(-15, -20, -10)
+            self.yaoyao_model.setScale(15)
+        except Exception as e:
+            print(f"瑶瑶模型加载失败: {e}")
+    
+    def _check_anim_completion(self, task):
+        """检查动画完成"""
+        if not hasattr(self, 'leidian_model') or self.leidian_model.isEmpty():
+            return task.done
+        
+        if not self.leidian_anims:
+            return task.done
+        
+        current_anim = self.leidian_anims[self.current_anim_index]
+        anim_control = self.leidian_model.getAnimControl(current_anim)
+        
+        if anim_control is None or not anim_control.isPlaying():
+            self.current_anim_index = (self.current_anim_index + 1) % len(self.leidian_anims)
+            next_anim = self.leidian_anims[self.current_anim_index]
+            self.leidian_model.play(next_anim)
+        
+        return task.cont
+    
+    def _load_starfield(self):
+        """加载星空"""
+        try:
+            # 天空球
+            skydome = self.loader.loadModel(SKYDOME_MODEL_PATH)
+            skydome.setScale(SKYDOME_SCALE)
+            skydome.setTwoSided(True)
+            skydome.setColor(*SKYDOME_COLOR)
+            skydome.setBin(SKYDOME_BIN, 0)
+            skydome.setDepthWrite(SKYDOME_DEPTHWRITE)
+            skydome.setLightOff(SKYDOME_LIGHTOFF)
+            skydome.reparentTo(self.render)
+            
+            # 星星
+            self._create_stars()
+        except Exception as e:
+            print(f"星空加载失败: {e}")
+    
+    def _create_stars(self):
+        """创建星星"""
+        import random
+        import math
+        
+        self.stars = self.render.attachNewNode(STAR_CONTAINER_NAME)
+        self.stars.setBin(STAR_BIN, 1)
+        self.stars.setDepthWrite(STAR_DEPTHWRITE)
+        self.stars.setLightOff(STAR_LIGHTOFF)
+        
+        star_points = GeomNode(STAR_POINTS_NODE_NAME)
+        star_points_np = self.stars.attachNewNode(star_points)
+        
+        vformat = GeomVertexFormat.getV3c4()
+        vdata = GeomVertexData("stars", vformat, Geom.UHStatic)
+        vertex = GeomVertexWriter(vdata, "vertex")
+        color = GeomVertexWriter(vdata, "color")
+        
+        for _ in range(STAR_NUM):
+            theta = random.uniform(0, math.pi)
+            phi = random.uniform(0, 2 * math.pi)
+            r = SKYDOME_RADIUS
+            x = r * math.sin(theta) * math.cos(phi)
+            y = r * math.sin(theta) * math.sin(phi)
+            z = r * math.cos(theta)
+            vertex.addData3f(x, y, z)
+            
+            brightness = random.uniform(0.7, 1.0)
+            if random.random() < 0.8:
+                rr, gg, bb = brightness, brightness, brightness
+            else:
+                rr, gg, bb = brightness, brightness * 0.8, brightness * 0.6
+            color.addData4f(rr, gg, bb, 1.0)
+        
+        points = GeomPoints(Geom.UHStatic)
+        points.addConsecutiveVertices(0, STAR_NUM)
+        points.closePrimitive()
+        geom = Geom(vdata)
+        geom.addPrimitive(points)
+        star_points.addGeom(geom)
+        star_points_np.setAttrib(RenderModeAttrib.make(1))
+        star_points_np.setRenderModeThickness(STAR_POINT_SIZE)
+    
+    # 游戏逻辑方法
+    def switch_player(self):
+        """切换玩家"""
+        if self.current_player == PLAYER_WHITE:
+            self.white_pieces_count -= 1
+            self.current_player = PLAYER_BLACK
+        else:
+            self.black_pieces_count -= 1
+            self.current_player = PLAYER_WHITE
+    
+    def update_gomoku_state(self, last_pos):
+        """更新游戏状态"""
+        row, col = last_pos // BOARD_SIZE, last_pos % BOARD_SIZE
+        self.statistics.add_move(row, col, self.current_player)
+        
+        self.audio_manager.play_place_piece_sound()
+        
+        if self._handle_game_over():
+            return
+        
+        self.switch_player()
+        self._render_all_pieces()
+        
+        if self.is_ai_enabled and self.current_player == self.ai_side:
+            self.ui_manager.show_ai_thinking()
+            self.taskMgr.doMethodLater(0.1, self._delayed_ai_move, 'ai-move-task')
+    
     def _delayed_ai_move(self, task):
-        """延迟执行AI移动"""
+        """延迟AI移动"""
         self.do_ai_move()
         return task.done
     
-    
     def do_ai_move(self):
-        """AI自动落子"""
+        """AI移动"""
         old_chessboard = copy.deepcopy(self.chessboard)
         self.chessboard = self.ai_player.get_next_chessboard(self.chessboard, self.ai_side)
-        self._hide_ai_thinking() # 隐藏思考提示
+        self.ui_manager.hide_ai_thinking()
         
-        # 播放AI下棋音效
-        self._play_place_piece_sound()
-
-        # 重新渲染所有棋子
+        # 找到AI下的位置
+        for i in range(BOARD_SIZE):
+            for j in range(BOARD_SIZE):
+                if old_chessboard.board[i][j] != self.chessboard.board[i][j]:
+                    self.statistics.add_move(i, j, self.ai_side)
+                    break
+        
+        self.audio_manager.play_place_piece_sound()
         self._render_all_pieces()
         
-        # 切换玩家
-        self.switch_player()
+        if self._handle_game_over():
+            return
         
-        # 检查胜利条件
-        self._handle_game_over()
-
+        self.switch_player()
+    
+    def undo_move(self):
+        """悔棋"""
+        if self.game_over:
+            print("Game is over, cannot undo")
+            return
+        
+        if not self.statistics.can_undo():
+            print("Cannot undo")
+            return
+        
+        self.audio_manager.play_drag_piece_sound()
+        
+        steps_to_undo = 2 if self.is_ai_enabled and len(self.statistics.move_history) >= 2 else 1
+        undone_moves = self.statistics.undo_moves(steps_to_undo)
+        
+        # 恢复棋盘状态
+        for row, col, player in undone_moves:
+            self.chessboard.board[row][col] = PIECE_EMPTY
+            if player == PLAYER_WHITE:
+                self.white_pieces_count += 1
+            else:
+                self.black_pieces_count += 1
+        
+        # 确定当前玩家
+        if steps_to_undo == 2:
+            self.current_player = PLAYER_WHITE if self.ai_side == PLAYER_BLACK else PLAYER_BLACK
+        else:
+            self.current_player = PLAYER_WHITE if self.current_player == PLAYER_BLACK else PLAYER_BLACK
+        
+        self._render_all_pieces()
+    
+    def restart_game(self):
+        """重新开始游戏"""
+        print("Restarting game...")
+        
+        # 重置游戏状态
+        self.chessboard = ChessBoard(size=BOARD_SIZE)
+        self.current_player = PLAYER_BLACK
+        self.game_over = False
+        self.white_pieces_count = MAX_PIECES_PER_PLAYER
+        self.black_pieces_count = MAX_PIECES_PER_PLAYER
+        
+        # 重置统计
+        self.statistics.reset()
+        
+        # 清理UI和特效
+        self.ui_manager.cleanup_game_over()
+        self.effects_manager.cleanup_particles()
+        
+        # 重新渲染
+        self._render_all_pieces()
+        
+        # 重新开始背景音乐
+        self.audio_manager.play_current_bgm()
+    
     def _handle_game_over(self):
-        """统一处理游戏结束逻辑"""
-        if not self.check_winner():
+        """处理游戏结束"""
+        if not self.chessboard.check_winner():
             return False
         
-        winner = "White" if self.chessboard.winner == PLAYER_WHITE else "Black"
-        print(f"🎉 Game Over! {winner} wins!")
+        self.game_over = True
+        winner = "Black" if self.chessboard.winner == PLAYER_BLACK else "White"
         
-        # 隐藏AI思考提示（如果正在显示）
-        self._hide_ai_thinking()
+        # 创建特效
+        winner_positions = self.chessboard.get_winner_positions()
+        if winner_positions:
+            self.effects_manager.create_victory_particles(winner_positions)
         
-        # 停止背景音乐
-        if self.current_bgm:
-            self.current_bgm.stop()
+        self.ui_manager.hide_ai_thinking()
+        self.audio_manager.stop_bgm()
         
-        # 根据玩家胜负播放相应音效
-        if (winner == "White" and not self.is_ai_enabled) or \
-        (winner == "White" and self.ai_side == PLAYER_BLACK) or \
-        (winner == "Black" and self.ai_side == PLAYER_WHITE):
-            # 玩家胜利
-            self._play_winner_music_sound()
-            victory_text = f"🎉 You Win! {winner} wins! Esc or enjoy music."
-            text_color = (0, 1, 0, 1)  # 绿色
+        # 判断胜负
+        is_ai_win = (winner == "White" and self.ai_side == PLAYER_WHITE) or \
+                   (winner == "Black" and self.ai_side == PLAYER_BLACK)
+        
+        if is_ai_win:
+            self.audio_manager.play_loser_sound()
         else:
-            # 玩家失败（AI胜利）
-            self._play_loser_music_sound()
-            victory_text = f"😔 You Lose! AI ({winner}) wins! Esc or enjoy music."
-            text_color = (1, 0, 0, 1)  # 红色
+            self.audio_manager.play_winner_sound()
         
-        # 屏幕显示结果
-        self.game_over_text = OnscreenText(
-            text=victory_text, 
-            pos=(0, 0), 
-            scale=0.1, 
-            fg=text_color,
-            shadow=(0, 0, 0, 1)
-        )
+        # 显示游戏结束界面
+        final_stats = self.statistics.get_final_statistics()
+        self.ui_manager.show_game_over(winner, is_ai_win, final_stats)
         
-        # 15秒后退出游戏
-        self.taskMgr.doMethodLater(15, self._exit_game, 'exit-task')
         return True
-
-    def _exit_game(self, task):
-        """退出游戏"""
-        print("游戏结束，正在退出...")
-        self.userExit()
-        return task.done
-
+    
     def _render_all_pieces(self):
-        """根据chessboard重新渲染所有棋子"""
-        # 销毁所有现有棋子
+        """重新渲染所有棋子"""
+        # 清理现有棋子
         for i in range(TOTAL_SQUARES):
             if self.pieces[i] is not None:
                 self.pieces[i].obj.removeNode()
                 self.pieces[i] = None
         
-        # 根据chessboard重新创建棋子
+        # 重新创建棋子
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
                 piece_type = self.chessboard.get_stone(row, col)
-                if piece_type != ' ':  # 不是空位
+                if piece_type != PIECE_EMPTY:
                     square_index = row * BOARD_SIZE + col
                     
-                    # 根据棋子类型确定颜色
                     if piece_type == PIECE_BLACK:
                         color = PIECEBLACK
                     elif piece_type == PIECE_WHITE:
@@ -647,260 +554,10 @@ class Gomoku_Start(ShowBase):
                     else:
                         continue
                     
-                    # 创建棋子
                     piece = Pawn(square_index, color, self)
                     piece.obj.setPos(square_pos(square_index))
                     self.pieces[square_index] = piece
-        
-        print("所有棋子重新渲染完成")
-
-    def _load_and_render_background(self):
-        """加载并渲染背景图片"""
-        try:
-            background_texture = self.loader.loadTexture("models/background2.jpg")
-            card_maker = CardMaker("background")
-            card_maker.setFrame(-1, 1, -1, 1)  # 设置平面大小
-            background_card = self.render.attachNewNode(card_maker.generate())
-            background_card.setTexture(background_texture)
-            background_card.setPos(*BACKGROUND_POSITION)  # 使用常量设置位置
-            background_card.setScale(20)  # 根据需要调整大小
-            print("背景图片加载成功")
-        except Exception as e:
-            print(f"背景图片加载失败: {e}")
     
-    def _setup_decoration(self):
-        """设置棋盒装饰模型"""
-        from utils.constants import WHITE_BOX_POS, BLACK_BOX_POS, DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z
-        from panda3d.core import Material
-
-        # 加载模型
-        model_path = "models/qihe.obj"
-        decoration_model = self.loader.loadModel(model_path)
-
-        # 设置模型缩放比例
-        decoration_model.setScale(DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z)
-
-        # 设置模型材质颜色为白棋盒颜色
-        white_material = Material()
-        white_material.setDiffuse((1, 1, 1, 1))  # 白棋盒颜色
-        decoration_model.setMaterial(white_material)
-
-        # 设置模型位置为白棋盒位置
-        decoration_model.setPos(WHITE_BOX_POS[0], WHITE_BOX_POS[1], WHITE_BOX_POS[2])
-
-        # 将模型附加到渲染节点
-        decoration_model.reparentTo(self.render)
-
-        # 复制模型并设置为黑棋盒装饰
-        black_decoration_model = decoration_model.copyTo(self.render)
-        black_material = Material()
-        black_material.setDiffuse((0, 0, 0, 1))  # 黑棋盒颜色
-        black_decoration_model.setMaterial(black_material)
-        black_decoration_model.setPos(BLACK_BOX_POS[0], BLACK_BOX_POS[1], BLACK_BOX_POS[2])
-
-    def _zoom_in(self):
-        """放大视角 (减小 FOV)"""
-        current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
-        new_fov = max(10, current_fov - 2)  #f最小 FOV 限制为 10
-        self.camLens.setFov(new_fov)
-
-    def _zoom_out(self):
-        """缩小视角 (增大 FOV)"""
-        current_fov = self.camLens.getFov()[0]  # 获取当前 FOV
-        new_fov = min(120, current_fov + 2)  # 最大 FOV 限制为 120
-        self.camLens.setFov(new_fov)
-    def load_ground(self):
-        """加载并渲染背景模型"""
-        try:
-            bg_model = self.loader.loadModel("models/kk.bam")
-            bg_model.reparentTo(self.render)
-            bg_model.setPos(0,0,-5)    # 可根据需要调整位置
-            bg_model.setScale(20)        # 可根据需要调整缩放
-            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
-            print("地面模型加载成功")
-        except Exception as e:
-            print(f"地面模型加载失败: {e}")
-
-    def load_world(self):
-        """加载并渲染背景模型"""
-        try:
-            bg_model = self.loader.loadModel("models/snow_ground.bam")
-            bg_model.reparentTo(self.render)
-            bg_model.setPos(0, 0, -5)    # 可根据需要调整位置
-            bg_model.setScale(20)        # 可根据需要调整缩放
-            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
-            print("地面模型加载成功")
-        except Exception as e:
-            print(f"地面模型加载失败: {e}")
-
-
-    def leidian(self):
-        """加载战士模型，并循环播放所有动画，基于播放状态切换"""
-        try:
-            leidian_model = Actor("models/zhanshi.glb")
-            leidian_model.reparentTo(self.render)
-            leidian_model.setPos(0, 0, 3)
-            leidian_model.setScale(100)
-            leidian_model.setHpr(90, -90, 0)
-            print("战士模型加载成功")
-
-            # 获取所有动画名
-            anims = leidian_model.getAnimNames()
-            print(f"检测到{len(anims)}个动画: {anims}")
-            
-            if not anims:
-                print("没有可用的动画")
-                return
-
-            # 创建光源
-            from panda3d.core import PointLight
-            plight = PointLight('leidian_light')
-            plight.setColor((1.5, 1.5, 1.5, 1))
-            plight_node = leidian_model.attachNewNode(plight)
-            plight_node.setPos(10, 10, 10)  # 光源在模型上方
-            leidian_model.setLight(plight_node)
-            
-            # 启动第一个动画（不循环）
-            leidian_model.loop(anims[0])
-            
-            # 保存到实例变量
-            self.leidian_model = leidian_model
-            self.leidian_anims = anims
-            self.current_anim_index = 0
-            
-            # 启动动画切换任务
-            self.leidian_task = self.taskMgr.add(self._check_anim_completion, "leidian_anim_check")
-            
-        except Exception as e:
-            print(f"战士模型加载失败: {e}")
-            import traceback
-            traceback.print_exc()
-
-    def _check_anim_completion(self, task):
-        """检查战士动画是否完成播放，完成后切换到下一个"""
-        if not self.leidian_model or self.leidian_model.isEmpty():
-            return task.done
-
-        anims = self.leidian_anims
-        if not anims:
-            return task.done
-
-        current_anim = anims[self.current_anim_index]
-        anim_control = self.leidian_model.getAnimControl(current_anim)
-        if anim_control is None or not anim_control.isPlaying():
-            # 动画已结束，切换到下一个
-            self.current_anim_index = (self.current_anim_index + 1) % len(anims)
-            next_anim = anims[self.current_anim_index]
-            self.leidian_model.stop()
-            self.leidian_model.loop(next_anim)
-            print(f"切换到下一个动画: {next_anim}")
-            # 添加短延迟防止重复触发
-            self.taskMgr.doMethodLater(0.1, lambda t: None, "leidian_delay")
-
-        return task.cont
-    
-    def load_lulu(self):
-        """加载水豚噜噜模型"""
-        try:
-            bg_model = self.loader.loadModel("models/lulu.glb")
-            bg_model.reparentTo(self.render)
-            bg_model.setPos(0,-20,2)    # 可根据需要调整位置
-            bg_model.setScale(20)        # 可根据需要调整缩放
-            bg_model.setHpr(180, 0, 0)   # 绕Z轴旋转180度
-            print("水豚噜噜模型加载成功")
-        except Exception as e:
-            print(f"水豚噜噜加载失败: {e}")
-    
-    def _setup_audio(self):
-        """设置音频系统"""
-        try:
-            # 加载下棋音效
-            self.place_piece_sound = self.loader.loadSfx(SOUND_CLICK)
-            if self.place_piece_sound:
-                print("下棋音效加载成功")
-            else:
-                print("下棋音效加载失败")
-            
-            # 加载胜利和失败音效
-            self.winner_music = self.loader.loadSfx(WINNER_MUSIC)
-            self.loser_music = self.loader.loadSfx(LOSER_MUSIC)
-            if self.winner_music and self.loser_music:
-                print("胜利和失败音效加载成功")
-            else:
-                print("胜利或失败音效加载失败")
-                
-            # 加载所有背景音乐
-            bgm_files = BGM_LIST
-            
-            for bgm_file in bgm_files:
-                if os.path.exists(bgm_file):
-                    bgm = self.loader.loadMusic(bgm_file)
-                    if bgm:
-                        self.bgm_list.append(bgm)
-                        print(f"背景音乐 {bgm_file} 加载成功")
-                    else:
-                        print(f"背景音乐 {bgm_file} 加载失败")
-                else:
-                    print(f"背景音乐文件 {bgm_file} 不存在")
-            
-            # 随机选择第一首背景音乐开始播放
-            if self.bgm_list:
-                self.current_bgm_index = random.randint(0, len(self.bgm_list) - 1)
-                print(f"随机选择第 {self.current_bgm_index + 1} 首背景音乐开始播放")
-                self._play_current_bgm()
-            else:
-                print("没有可用的背景音乐")
-                
-        except Exception as e:
-            print(f"音频加载失败: {e}")
-            self.place_piece_sound = None
-            self.winner_music = None
-            self.loser_music = None
-            self.bgm_list = []
-        
-    def _play_current_bgm(self):
-        """播放当前背景音乐"""
-        if self.bgm_list and 0 <= self.current_bgm_index < len(self.bgm_list):
-            # 停止当前播放的音乐
-            if self.current_bgm:
-                self.current_bgm.stop()
-            
-            # 播放新的背景音乐
-            self.current_bgm = self.bgm_list[self.current_bgm_index]
-            self.current_bgm.setVolume(SOUND_VOLUME)
-            self.current_bgm.play()
-            
-            # 监听音乐结束事件，自动切换到下一首
-            self.taskMgr.doMethodLater(
-                self.current_bgm.length(), 
-                self._switch_to_next_bgm, 
-                'bgm-switch-task'
-            )
-            
-            print(f"正在播放第 {self.current_bgm_index + 1} 首背景音乐")
-
-    def _switch_to_next_bgm(self, task):
-        """切换到下一首背景音乐"""
-        if self.bgm_list:
-            # 循环到下一首
-            self.current_bgm_index = (self.current_bgm_index + 1) % len(self.bgm_list)
-            print(f"切换到第 {self.current_bgm_index + 1} 首背景音乐")
-            self._play_current_bgm()
-        return task.done
-
-    def _play_place_piece_sound(self):
-        """播放下棋音效"""
-        if self.place_piece_sound:
-            self.place_piece_sound.play()
-
-    def _play_winner_music_sound(self):
-        """播放胜利音效"""
-        if self.winner_music:
-            self.winner_music.play()
-
-    def _play_loser_music_sound(self):
-        """播放失败音效"""
-        if self.loser_music:
-            self.loser_music.play()
-
-    
+    def check_winner(self):
+        """检查胜利条件"""
+        return self.chessboard.check_winner()

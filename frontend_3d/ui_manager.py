@@ -163,3 +163,33 @@ class UIManager:
         """清理游戏结束UI"""
         if hasattr(self, 'game_over_text') and self.game_over_text:
             self.game_over_text.destroy()
+    
+    def cleanup(self):
+        """彻底清理所有UI元素"""
+        # 销毁所有 OnscreenText
+        if hasattr(self, 'title') and self.title:
+            self.title.destroy()
+            self.title = None
+        if hasattr(self, 'tab_hint') and self.tab_hint:
+            self.tab_hint.destroy()
+            self.tab_hint = None
+        if hasattr(self, 'ai_thinking_text') and self.ai_thinking_text:
+            self.ai_thinking_text.destroy()
+            self.ai_thinking_text = None
+        if hasattr(self, 'game_over_text') and self.game_over_text:
+            self.game_over_text.destroy()
+            self.game_over_text = None
+
+        # 销毁功能UI
+        if hasattr(self, 'function_ui'):
+            for key, element in self.function_ui.items():
+                if element:
+                    element.destroy()
+            self.function_ui.clear()
+
+        # 销毁可隐藏UI
+        if hasattr(self, 'hideable_ui_elements'):
+            for element in self.hideable_ui_elements:
+                if element:
+                    element.destroy()
+            self.hideable_ui_elements.clear()

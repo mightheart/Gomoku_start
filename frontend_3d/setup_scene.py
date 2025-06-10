@@ -16,7 +16,7 @@ class SceneSetup:
         self.yaoyao_model = None
         self.skydome = None
         self.stars = None
-        self.collision_nodes = []
+        
         # 新增：光照节点引用
         self.ambient_light_np = None
         self.directional_light_np = None
@@ -55,7 +55,7 @@ class SceneSetup:
             self.ground_model.setPos(0, 0, -5)
             self.ground_model.setScale(20)
             self.ground_model.setHpr(180, 0, 0)
-            self.create_walls(self.ground_model)  # 创建墙体碰撞体
+            
         except Exception as e:
             print(f"地面模型加载失败: {e}")
 
@@ -238,30 +238,6 @@ class SceneSetup:
         star_points_np.setAttrib(RenderModeAttrib.make(1))
         star_points_np.setRenderModeThickness(STAR_POINT_SIZE)
 
-    def create_walls(self, ground):
-        """在地面节点下创建四面墙体碰撞体"""
-        from panda3d.core import CollisionNode, CollisionBox, Point3, BitMask32
-        # 左墙
-        left_wall = ground.attachNewNode(CollisionNode('left_wall'))
-        left_wall.node().addSolid(CollisionBox(Point3(-5, 0, 50), 1, 1000, 50))
-        left_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.collision_nodes.append(left_wall)
-        # 右墙
-        right_wall = ground.attachNewNode(CollisionNode('right_wall'))
-        right_wall.node().addSolid(CollisionBox(Point3(5, 0, 50), 1, 1000, 50))
-        right_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.collision_nodes.append(right_wall)
-        # 后墙
-        back_wall = ground.attachNewNode(CollisionNode('back_wall'))
-        back_wall.node().addSolid(CollisionBox(Point3(0, 0, 50), 20, 1, 50))
-        back_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.collision_nodes.append(back_wall)
-        # 前墙
-        front_wall = ground.attachNewNode(CollisionNode('front_wall'))
-        front_wall.node().addSolid(CollisionBox(Point3(0, 270, 50), 20, 1, 50))
-        front_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.collision_nodes.append(front_wall)
-
     def cleanup(self):
         """清理所有加载的模型节点和光照"""
         if self.background_card:
@@ -286,10 +262,6 @@ class SceneSetup:
         if hasattr(self, "star_twinkle_task"):
             self.taskMgr.remove(self.star_twinkle_task)
             del self.star_twinkle_task
-        # 清理碰撞体
-        for node in getattr(self, "collision_nodes", []):
-            node.removeNode()
-        self.collision_nodes.clear()
         # 新增：清理光照节点
         if self.ambient_light_np:
             self.render.clearLight(self.ambient_light_np)

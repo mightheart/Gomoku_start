@@ -272,3 +272,13 @@ class MousePicker:
         
         color = "白" if piece.obj.getColor()[0] > 0.5 else "黑"
         return f"{color}子"
+
+    def cleanup(self):
+        # 清理棋盘光标
+        if hasattr(self, "cursor_np") and self.cursor_np:
+            self.cursor_np.removeNode()
+            self.cursor_np = None
+        # 清理预览棋子
+        if hasattr(self, "preview_piece") and self.preview_piece:
+            self.preview_piece.removeNode()
+            self.preview_piece = None

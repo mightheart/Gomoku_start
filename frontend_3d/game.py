@@ -234,7 +234,7 @@ class Gomoku_Start(ShowBase):
         
         # 重置游戏状态
         self.chessboard = ChessBoard(size=BOARD_SIZE)
-        self.current_player = PLAYER_BLACK
+        self.current_player = PLAYER_WHITE
         self.game_over = False
         self.white_pieces_count = MAX_PIECES_PER_PLAYER
         self.black_pieces_count = MAX_PIECES_PER_PLAYER
@@ -320,9 +320,12 @@ class Gomoku_Start(ShowBase):
             self.taskMgr.remove(self.mouse_task)
         if hasattr(self, "move_task"):
             self.taskMgr.remove(self.move_task)
+        #清理鼠标光标
+        if hasattr(self, "mouse_picker"):
+            self.mouse_picker.cleanup()
         # 清理UI和特效
         if hasattr(self, "ui_manager"):
-            self.ui_manager.cleanup_game_over()
+            self.ui_manager.cleanup()
         if hasattr(self, "effects_manager"):
             self.effects_manager.cleanup_particles()
         # 清理场景和棋盘
@@ -330,4 +333,9 @@ class Gomoku_Start(ShowBase):
             self.scene_setup.cleanup()
         if hasattr(self, "board_setup"):
             self.board_setup.cleanup()
+        if hasattr(self, "pieces"):
+            for piece in self.pieces:
+                if piece is not None and hasattr(piece, "obj"):
+                    piece.obj.removeNode()
+            self.pieces = [None for _ in range(TOTAL_SQUARES)]
         # 其它需要清理的内容可按需补充

@@ -24,8 +24,14 @@ class MainApp(ShowBase):
         # 记录进入棋盘时的位置
         self.last_camera_pos = camera_pos
         self.last_camera_hpr = camera_hpr
-        # 隐藏CSGO模式
-        self.csgo_mode.cleanup()
+        # 清理旧的 gomoku_mode
+        if self.gomoku_mode:
+            self.gomoku_mode.cleanup()
+            self.gomoku_mode = None
+        # 清理CSGO模式
+        if self.csgo_mode:
+            self.csgo_mode.cleanup()
+            self.csgo_mode = None
         # 启动Gomoku模式
         self.gomoku_mode = Gomoku_Start(self)
         self.mode = "gomoku"
@@ -35,6 +41,10 @@ class MainApp(ShowBase):
         if self.gomoku_mode:
             self.gomoku_mode.cleanup()
             self.gomoku_mode = None
+        # 清理旧的 csgo_mode
+        if self.csgo_mode:
+            self.csgo_mode.cleanup()
+            self.csgo_mode = None
         # 恢复CSGO模式
         self.csgo_mode = CSGOCameraDemo(self)
         if self.last_camera_pos:

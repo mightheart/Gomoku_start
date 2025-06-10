@@ -1,6 +1,6 @@
 from direct.showbase.ShowBase import ShowBase
 from panda3d.core import WindowProperties, Vec3, BitMask32
-from panda3d.core import CollisionTraverser, CollisionNode, CollisionSphere, CollisionHandlerPusher
+from panda3d.core import CollisionTraverser, CollisionNode, CollisionSphere, CollisionHandlerPusher,CollisionBox,Point3
 from direct.task import Task
 from direct.gui.OnscreenText import OnscreenText
 from frontend_3d.setup_scene import SceneSetup
@@ -32,7 +32,7 @@ class CSGOCameraDemo:
         self.mouse_sensitivity = 0.2
 
         # 键盘移动速度
-        self.move_speed = 10
+        self.move_speed = 5
 
         # 隐藏鼠标光标并锁定到窗口中心
         props = WindowProperties()
@@ -61,6 +61,35 @@ class CSGOCameraDemo:
         camera_cnode.setIntoCollideMask(BitMask32.allOff())
         self.camera_collider = self.camera.attachNewNode(camera_cnode)
 
+        # 注册到碰撞系统
+        self.pusher.addCollider(self.camera_collider, self.camera)
+        self.cTrav.addCollider(self.camera_collider, self.pusher)
+
+        self.wall_nodes = []
+
+        # 左墙（x=60）
+        left_wall = self.ground.attachNewNode(CollisionNode('left_wall'))
+        left_wall.node().addSolid(CollisionBox(Point3(5, 0, 5), 1, 1000, 50))  # x=60，y方向很长，z中心=5
+        left_wall.node().setIntoCollideMask(BitMask32.bit(1))
+        self.wall_nodes.append(left_wall)
+
+        # 右墙（x=-60）
+        right_wall = self.ground.attachNewNode(CollisionNode('right_wall'))
+        right_wall.node().addSolid(CollisionBox(Point3(-5, 0, 5), 1, 1000, 50))
+        right_wall.node().setIntoCollideMask(BitMask32.bit(1))
+        self.wall_nodes.append(right_wall)
+
+        # 后墙（y=85.27）
+        back_wall = self.ground.attachNewNode(CollisionNode('back_wall'))
+        back_wall.node().addSolid(CollisionBox(Point3(0, 4, 5), 100, 1, 100))
+        back_wall.node().setIntoCollideMask(BitMask32.bit(1))
+        self.wall_nodes.append(back_wall)
+
+        # 前墙（y=-900）
+        front_wall = self.ground.attachNewNode(CollisionNode('front_wall'))
+        front_wall.node().addSolid(CollisionBox(Point3(0, -45, 5), 100, 1, 100))
+        front_wall.node().setIntoCollideMask(BitMask32.bit(1))
+        self.wall_nodes.append(front_wall)
         # -----------------------------------
 
         # 添加摄像机位置显示文本
@@ -164,6 +193,11 @@ class CSGOCameraDemo:
             self.scene_setup.cleanup()
         if hasattr(self, "board_setup"):
             self.board_setup.cleanup()
+        # 清理墙体碰撞模型
+        if hasattr(self, "wall_nodes"):
+            for node in self.wall_nodes:
+                node.removeNode()
+            self.wall_nodes.clear()
 
     def restore_camera(self, pos, hpr):
         self.base.camera.setPos(pos)

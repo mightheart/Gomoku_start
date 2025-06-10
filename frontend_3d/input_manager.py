@@ -49,13 +49,19 @@ class InputManager:
         self.base.accept("r", self._handle_restart)
         self.base.accept("tab", self._handle_tab)
         self.base.accept("space", self._stop_auto_rotate)
-        
+        self.base.accept("b", self._handle_back)
+
         # 鼠标控制
         self.base.accept("mouse1", lambda: self.base.mouse_picker.grab_piece())
         self.base.accept("mouse1-up", lambda: self.base.mouse_picker.release_piece())
         self.base.accept("wheel_up", self._zoom_in)
         self.base.accept("wheel_down", self._zoom_out)
     
+    def _handle_back(self):
+        """处理返回漫游模式"""
+        if hasattr(self.base, "_back_to_csgo_mode"):
+            self.base._back_to_csgo_mode()
+            
     def _handle_undo(self):
         """处理悔棋"""
         self.base.undo_move()

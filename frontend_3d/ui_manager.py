@@ -42,7 +42,8 @@ class UIManager:
             ("SPACE: Stop auto rotation", (0.06, -0.34)),
             ("U: Undo move (max 3 times)", (0.06, -0.40)),
             ("Mouse Wheel: Zoom in/out", (0.06, -0.46)),
-            ("R: Restart game", (0.06, -0.52))
+            ("R: Restart game", (0.06, -0.52)),
+            ("B: Back to roam mode", (0.06, -0.58))
         ]
         
         for text, pos in controls:

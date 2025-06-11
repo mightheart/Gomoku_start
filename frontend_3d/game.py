@@ -246,6 +246,9 @@ class Gomoku_Start(ShowBase):
         self.ui_manager.cleanup_game_over()
         self.effects_manager.cleanup_particles()
         
+        # 停止所有音乐
+        self.audio_manager.stop_all_music()
+        
         # 重新渲染
         self._render_all_pieces()
         

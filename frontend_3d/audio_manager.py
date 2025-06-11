@@ -70,13 +70,15 @@ class AudioManager:
             self.drag_piece_sound.play()
     
     def play_winner_sound(self):
-        """播放胜利音效"""
+        """播放胜利音效并暂停背景音乐"""
+        self.stop_all_music()  # 停止所有音乐
         if self.winner_music:
             self.winner_music.setVolume(SOUND_VOLUME)
             self.winner_music.play()
     
     def play_loser_sound(self):
-        """播放失败音效"""
+        """播放失败音效并暂停背景音乐"""
+        self.stop_all_music()  # 停止所有音乐
         if self.loser_music:
             self.loser_music.setVolume(SOUND_VOLUME)
             self.loser_music.play()
@@ -111,3 +113,12 @@ class AudioManager:
         """停止背景音乐"""
         if self.current_bgm:
             self.current_bgm.stop()
+    
+    def stop_all_music(self):
+        """停止所有音乐，包括背景音乐和胜利/失败音乐"""
+        if self.current_bgm:
+            self.current_bgm.stop()
+        if self.winner_music:
+            self.winner_music.stop()
+        if self.loser_music:
+            self.loser_music.stop()

@@ -29,10 +29,10 @@ class CSGOCameraDemo:
         self.board_setup.setup_board()
 
         # 鼠标灵敏度
-        self.mouse_sensitivity = 0.2
+        self.mouse_sensitivity = 0.05
 
         # 键盘移动速度
-        self.move_speed = 5
+        self.move_speed = 0.6
 
         # 隐藏鼠标光标并锁定到窗口中心
         props = WindowProperties()

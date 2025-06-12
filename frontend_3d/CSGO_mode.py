@@ -1,6 +1,5 @@
 from direct.showbase.ShowBase import ShowBase
-from panda3d.core import WindowProperties, Vec3, BitMask32
-from panda3d.core import CollisionTraverser, CollisionNode, CollisionSphere, CollisionHandlerPusher, CollisionBox, Point3
+from panda3d.core import WindowProperties, Vec3
 from direct.task import Task
 from direct.gui.OnscreenText import OnscreenText
 from frontend_3d.setup_scene import SceneSetup
@@ -21,7 +20,6 @@ class CSGOCameraDemo:
         self._init_scene()
         self._init_board()
         self._init_controls()
-        self._init_collision()
         self._init_ui()
         self._start_tasks()
 
@@ -60,44 +58,7 @@ class CSGOCameraDemo:
             self.accept(f"{key}-up", self.set_key, [key, False])
         self.accept("escape", sys.exit)
 
-    def _init_collision(self):
-        self.cTrav = CollisionTraverser()
-        self.pusher = CollisionHandlerPusher()
-        # 摄像机碰撞球
-        camera_sphere = CollisionSphere(0, 0, 0, 5)
-        camera_cnode = CollisionNode('camera')
-        camera_cnode.addSolid(camera_sphere)
-        camera_cnode.setFromCollideMask(BitMask32.bit(1))
-        camera_cnode.setIntoCollideMask(BitMask32.allOff())
-        self.camera_collider = self.camera.attachNewNode(camera_cnode)
-        self.pusher.addCollider(self.camera_collider, self.camera)
-        self.cTrav.addCollider(self.camera_collider, self.pusher)
-        # 墙体
-        self.wall_nodes = []
-        self._create_walls()
-
-    def _create_walls(self):
-        # 按你的实际世界坐标设置
-        # 左墙（x=60）
-        left_wall = self.ground.attachNewNode(CollisionNode('left_wall'))
-        left_wall.node().addSolid(CollisionBox(Point3(60, 0, 5), 1, 1000, 100))
-        left_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.wall_nodes.append(left_wall)
-        # 右墙（x=-60）
-        right_wall = self.ground.attachNewNode(CollisionNode('right_wall'))
-        right_wall.node().addSolid(CollisionBox(Point3(-60, 0, 5), 1, 1000, 100))
-        right_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.wall_nodes.append(right_wall)
-        # 后墙（y=85.27）
-        back_wall = self.ground.attachNewNode(CollisionNode('back_wall'))
-        back_wall.node().addSolid(CollisionBox(Point3(0, 85.27, 5), 100, 1, 100))
-        back_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.wall_nodes.append(back_wall)
-        # 前墙（y=-900）
-        front_wall = self.ground.attachNewNode(CollisionNode('front_wall'))
-        front_wall.node().addSolid(CollisionBox(Point3(0, -900, 5), 100, 1, 100))
-        front_wall.node().setIntoCollideMask(BitMask32.bit(1))
-        self.wall_nodes.append(front_wall)
+    
 
     def _init_ui(self):
         self.cam_pos_text = OnscreenText(
@@ -154,7 +115,14 @@ class CSGOCameraDemo:
 
         # 实时更新摄像机位置文本
         pos = self.base.camera.getPos()
-        self.cam_pos_text.setText(f"Camera Pos: ({pos.x:.2f}, {pos.y:.2f}, {pos.z:.2f})")
+
+        # 限制摄像机坐标
+        x = max(-60, min(60, pos.x))
+        y = max(-900, min(85.27, pos.y))
+        z = 5  # 固定高度
+        self.base.camera.setPos(x, y, z)
+
+        self.cam_pos_text.setText(f"Pos: ({x:.2f}, {y:.2f}, {z:.2f})")
         return Task.cont
 
     def check_gomoku_area(self, task):

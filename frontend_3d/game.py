@@ -209,21 +209,6 @@ class Gomoku_Start(ShowBase):
     
     def _back_to_csgo_mode(self):
         """返回CSGO漫游模式"""
-        # 清理UI和特效
-        if hasattr(self, "ui_manager"):
-            self.ui_manager.cleanup_game_over()
-        if hasattr(self, "effects_manager"):
-            self.effects_manager.cleanup_particles()
-        # 停止任务
-        if hasattr(self, "mouse_task"):
-            self.taskMgr.remove(self.mouse_task)
-        if hasattr(self, "move_task"):
-            self.taskMgr.remove(self.move_task)
-        # 清理场景和棋盘
-        if hasattr(self, "scene_setup"):
-            self.scene_setup.cleanup()
-        if hasattr(self, "board_setup"):
-            self.board_setup.cleanup()
         # 通知主控切换
         if hasattr(self, "messenger"):
             self.messenger.send("back-to-csgo")

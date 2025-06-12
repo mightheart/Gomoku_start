@@ -85,6 +85,7 @@ class AudioManager:
     
     def play_current_bgm(self):
         """播放当前背景音乐"""
+        self.task_mgr.remove('bgm-switch-task')
         if self.bgm_list and 0 <= self.current_bgm_index < len(self.bgm_list):
             if self.current_bgm:
                 self.current_bgm.stop()
@@ -116,6 +117,8 @@ class AudioManager:
     
     def stop_all_music(self):
         """停止所有音乐，包括背景音乐和胜利/失败音乐"""
+        #移除旧的切歌任务
+        self.task_mgr.remove('bgm-switch-task')
         if self.current_bgm:
             self.current_bgm.stop()
         if self.winner_music:

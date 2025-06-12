@@ -153,7 +153,7 @@ class UIManager:
             victory_text = f"🎉 Congratulations! {winner} Wins!"
             text_color = UI_COLOR_GREEN
         
-        combined_text = victory_text + "\n\n" + final_stats + "\n\nPress R to Restart"
+        combined_text = victory_text + "\n\n" + final_stats + "\nPress B to go back to the world" + "\nPress R to Restart"
         
         self.game_over_text = OnscreenText(
             text=combined_text, pos=UI_GAME_OVER_POS, scale=UI_GAME_OVER_SCALE,

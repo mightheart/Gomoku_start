@@ -37,7 +37,6 @@ class CSGOCameraDemo:
 
     def _init_audio(self):
         self.audio_manager = AudioManager(self.loader, self.taskMgr)
-        self.audio_manager.play_current_bgm()
 
     def _init_scene(self):
         self.scene_setup = SceneSetup(self.loader, self.render, self.taskMgr)

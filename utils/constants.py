@@ -119,11 +119,22 @@ FALLBACK_SKY_LIGHTOFF = 1
 # 音频常量
 SOUND_CLICK = "sound/place_piece.mp3"  # 落子
 SOUND_DRAG = "sound/drag_piece.mp3"    # 提子
-BGM_LIST = ["sound/bgm1.mp3", "sound/bgm3.mp3", 
+BGM_LIST = [ "sound/bgm3.mp3", 
             "sound/bgm2.wav", 
             "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
+NAHITA_VOICE = ["sound/nahita/变聪明啦，呵呵.wav",
+                "sound/nahita/不知道干什么的话.......wav",
+                "sound/nahita/初次见面.wav",
+                "sound/nahita/换个策略吧.wav",
+                "sound/nahita/摸摸头.wav",
+                "sound/nahita/就这么看着你，算是一种爱好吗？.wav",
+                "sound/nahita/让我想想.wav",
+                "sound/nahita/头顶要长蘑菇了.wav",
+                "sound/nahita/我不明白.wav",
+                "sound/nahita/又有心事吗？.wav",
+                "sound/nahita/这不明智.wav"]
 WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
-LOSER_MUSIC = "sound/loser_music.mp3"  # 失败音乐
+LOSER_MUSIC = "sound/nahita/摸摸头.wav"  # 失败音乐
 SOUND_VOLUME = 0.8  # BGM默认音量
 
 # 游戏统计和功能常量

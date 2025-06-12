@@ -276,8 +276,10 @@ class Gomoku_Start(ShowBase):
                    (winner == "Black" and self.ai_side == PLAYER_BLACK)
         
         if is_ai_win:
+            self.audio_manager.play_nahita_voice("摸摸头")
             self.audio_manager.play_loser_sound()
         else:
+            self.audio_manager.play_nahita_voice("变聪明啦")
             self.audio_manager.play_winner_sound()
         
         # 显示游戏结束界面

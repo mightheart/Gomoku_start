@@ -341,4 +341,7 @@ class Gomoku_Start(ShowBase):
                 if piece is not None and hasattr(piece, "obj"):
                     piece.obj.removeNode()
             self.pieces = [None for _ in range(TOTAL_SQUARES)]
+        # 清理音乐
+        if hasattr(self, "audio_manager"):
+            self.audio_manager.stop_all_music()
         # 其它需要清理的内容可按需补充

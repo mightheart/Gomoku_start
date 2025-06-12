@@ -275,9 +275,9 @@ class MousePicker:
 
     def cleanup(self):
         # 清理棋盘光标
-        if hasattr(self, "cursor_np") and self.cursor_np:
-            self.cursor_np.removeNode()
-            self.cursor_np = None
+        if hasattr(self, "highlight_circle") and self.highlight_circle:
+            self.highlight_circle.removeNode()
+            self.highlight_circle = None
         # 清理预览棋子
         if hasattr(self, "preview_piece") and self.preview_piece:
             self.preview_piece.removeNode()

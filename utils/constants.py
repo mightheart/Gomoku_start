@@ -123,8 +123,10 @@ BGM_LIST = [ "sound/bgm3.mp3",
             "sound/bgm2.wav", 
             "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
 NAHITA_VOICE = [
-                "sound/nahita/欢迎，初次见面.wav",
-                "sound/nahita/欢迎，就这么看着你，算是一种爱好吗？.wav",
+                "sound/nahita/欢迎，终于来了.wav",
+                "sound/nahita/欢迎，一起来下棋吗.wav",
+                "sound/nahita/欢迎，请坐.wav",
+                "sound/nahita/欢迎，等你好久了.wav",
                 "sound/nahita/玩家失败，摸摸头.wav",
                 "sound/nahita/玩家失败，你已经做的很好了.wav",
                 "sound/nahita/玩家失败，换个策略吧.wav",

@@ -76,7 +76,7 @@ class Gomoku_Start(ShowBase):
         """初始化所有管理器"""
         self.audio_manager = AudioManager(self.loader, self.taskMgr)
         self.ui_manager = UIManager(self)
-        self.statistics = GameStatistics()
+        self.statistics = GameStatistics(self.audio_manager)
         self.effects_manager = EffectsManager(self.render, self.taskMgr)
         
         # 创建控制器
@@ -126,24 +126,36 @@ class Gomoku_Start(ShowBase):
     # 游戏逻辑方法
     def switch_player(self):
         """切换玩家"""
-        if self.current_player == PLAYER_WHITE:
-            self.white_pieces_count -= 1
-            self.current_player = PLAYER_BLACK
-        else:
-            self.black_pieces_count -= 1
-            self.current_player = PLAYER_WHITE
+        # 通知统计管理器玩家切换（这里会处理AI思考语音和时间统计）
+        old_player = self.current_player
+        new_player = PLAYER_WHITE if self.current_player == PLAYER_BLACK else PLAYER_BLACK
+        
+        # 先通知统计管理器切换（处理时间统计和AI语音）
+        if hasattr(self, 'statistics'):
+            self.statistics.switch_player(new_player)
+        
+        # 然后更新当前玩家
+        self.current_player = new_player
+        
+        print(f"切换玩家: {old_player} -> {new_player}")
     
     def update_gomoku_state(self, last_pos):
         """更新游戏状态"""
         row, col = last_pos // BOARD_SIZE, last_pos % BOARD_SIZE
-        self.statistics.add_move(row, col, self.current_player)
         
+        # 减少当前玩家的棋子数量（在下棋时减少，而不是切换时）
+        if self.current_player == PLAYER_WHITE:
+            self.white_pieces_count -= 1
+        else:
+            self.black_pieces_count -= 1
+        
+        self.statistics.add_move(row, col, self.current_player)
         self.audio_manager.play_place_piece_sound()
         
         if self._handle_game_over():
             return
         
-        self.switch_player()
+        self.switch_player()  # 这里只负责切换，不减少棋子
         self._render_all_pieces()
         
         if self.is_ai_enabled and self.current_player == self.ai_side:
@@ -160,6 +172,12 @@ class Gomoku_Start(ShowBase):
         old_chessboard = copy.deepcopy(self.chessboard)
         self.chessboard = self.ai_player.get_next_chessboard(self.chessboard, self.ai_side)
         self.ui_manager.hide_ai_thinking()
+        
+        # 减少AI的棋子数量
+        if self.ai_side == PLAYER_WHITE:
+            self.white_pieces_count -= 1
+        else:
+            self.black_pieces_count -= 1
         
         # 找到AI下的位置
         for i in range(BOARD_SIZE):
@@ -261,10 +279,10 @@ class Gomoku_Start(ShowBase):
                    (winner == "Black" and self.ai_side == PLAYER_BLACK)
         
         if is_ai_win:
-            self.audio_manager.play_nahita_voice("摸摸头")
+            self.audio_manager.play_nahita_voice("玩家失败")
             self.audio_manager.play_loser_sound()
         else:
-            self.audio_manager.play_nahita_voice("变聪明啦")
+            self.audio_manager.play_nahita_voice("玩家胜利")
             self.audio_manager.play_winner_sound()
         
         # 显示游戏结束界面

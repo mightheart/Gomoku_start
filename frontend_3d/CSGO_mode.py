@@ -22,6 +22,7 @@ class CSGOCameraDemo:
         self._init_controls()
         self._init_ui()
         self._start_tasks()
+        self._welcome_voice_played = False  # 欢迎语音，只播放一次
 
     def _setup_window(self):
         props = WindowProperties()
@@ -134,6 +135,11 @@ class CSGOCameraDemo:
                 self.in_gomoku_area = True
                 self.hint_text = OnscreenText("Press space to enter the game", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
                 self.base.accept("space", self._start_gomoku)
+                
+                # 首次触发时播放欢迎语音
+                if not self._welcome_voice_played:
+                    self._play_welcome_voice()
+                    self._welcome_voice_played = True
         else:
             if self.in_gomoku_area:
                 self.in_gomoku_area = False
@@ -147,6 +153,13 @@ class CSGOCameraDemo:
         # 通知主程序切换到Gomoku模式
         if hasattr(self.base, "messenger"):
             self.base.messenger.send("start-gomoku", [self.base.camera.getPos(), self.base.camera.getHpr()])
+
+    def _play_welcome_voice(self):
+        """播放欢迎语音"""
+        if hasattr(self, 'audio_manager') and self.audio_manager:
+            print("播放首次接近棋盘的欢迎语音")
+            result = self.audio_manager.play_nahita_voice("欢迎", volume=1)
+            print(f"欢迎语音播放结果: {result}")
 
     def cleanup(self):
         # 清理UI、任务、模型、墙体、音乐等
@@ -166,6 +179,8 @@ class CSGOCameraDemo:
         # 清理音乐
         if hasattr(self, "audio_manager"):
             self.audio_manager.stop_all_music()
+        # 重置欢迎语音标记（重新进入CSGO模式时可以再次播放）
+        self._welcome_voice_played = False
 
     def restore_camera(self, pos, hpr):
         self.base.camera.setPos(pos)

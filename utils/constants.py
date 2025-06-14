@@ -119,12 +119,39 @@ FALLBACK_SKY_LIGHTOFF = 1
 # 音频常量
 SOUND_CLICK = "sound/place_piece.mp3"  # 落子
 SOUND_DRAG = "sound/drag_piece.mp3"    # 提子
-BGM_LIST = ["sound/bgm1.mp3", "sound/bgm3.mp3", 
+BGM_LIST = [ "sound/bgm3.mp3", 
             "sound/bgm2.wav", 
             "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
+NAHITA_VOICE = [
+                "sound/nahita/欢迎，终于来了.wav",
+                "sound/nahita/欢迎，一起来下棋吗.wav",
+                "sound/nahita/欢迎，请坐.wav",
+                "sound/nahita/欢迎，等你好久了.wav",
+                "sound/nahita/玩家失败，摸摸头.wav",
+                "sound/nahita/玩家失败，你已经做的很好了.wav",
+                "sound/nahita/玩家失败，换个策略吧.wav",
+                "sound/nahita/玩家胜利，我迷路了.wav",
+                "sound/nahita/玩家胜利，是我小瞧你了.wav",
+                "sound/nahita/玩家胜利，变聪明啦.wav",
+                "sound/nahita/思考，这不明智.wav",
+                "sound/nahita/思考，让我想想.wav",
+                "sound/nahita/思考，有趣.wav",
+                "sound/nahita/思考，沉思.wav",
+                "sound/nahita/思考，唔姆.wav",
+                "sound/nahita/思考，下这好了.wav",
+                "sound/nahita/玩家失败，又走神啦？.wav",
+                "sound/nahita/思考，全部看见啦.wav",
+                "sound/nahita/思考，这都被你发现了.wav",
+                "sound/nahita/催促，又有心事吗？.wav",
+                "sound/nahita/催促，头顶要长蘑菇了.wav",
+                "sound/nahita/催促，长蘑菇2.wav",
+                "sound/nahita/催促，长蘑菇3.wav",
+                "sound/nahita/催促，想好下哪了吗.wav",
+                "sound/nahita/催促，不知道干什么的话.......wav"
+               ]
 WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
-LOSER_MUSIC = "sound/loser_music.mp3"  # 失败音乐
-SOUND_VOLUME = 0.8  # BGM默认音量
+LOSER_MUSIC = "sound/nahita/摸摸头.wav"  # 失败音乐
+SOUND_VOLUME = 0.2  # BGM默认音量
 
 # 游戏统计和功能常量
 MAX_UNDO_STEPS = 3                  # 最大悔棋次数

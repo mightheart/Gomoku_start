@@ -21,6 +21,7 @@ from .input_manager import InputManager
 from Gomoku_ai_classical.ai import AIPlayer
 from .setup_scene import SceneSetup
 from .setup_board import BoardSetup
+from Gomoku_ai_minimax.ai import MinimaxAIPlayer
 class Gomoku_Start(ShowBase):
     """五子棋游戏主类 - 重构版本"""
     
@@ -46,7 +47,7 @@ class Gomoku_Start(ShowBase):
         
         # 游戏组件
         self.chessboard = ChessBoard(size=BOARD_SIZE)
-        self.ai_player = AIPlayer()
+        self.ai_player = MinimaxAIPlayer()
         
         # 棋盘数据
         self.squares = [None for _ in range(TOTAL_SQUARES)]

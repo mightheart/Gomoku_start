@@ -210,7 +210,7 @@ class AudioManager:
         
         if identifier is None:
             # 随机播放 - 避免重复
-            voice_index = self._get_random_voice_index()
+            voice_index = self._get_random_tinyun_voice_index()  # 应该调用Tinyun专用函数
         elif isinstance(identifier, int):
             # 按索引播放
             if 0 <= identifier < len(self.tinyun_voices):
@@ -220,7 +220,7 @@ class AudioManager:
                 return False
         elif isinstance(identifier, str):
             # 按关键词匹配 - 找到所有匹配项，然后随机选择一个（避免重复）
-            voice_index = self._get_matched_voice_index(identifier)
+            voice_index = self._get_matched_tinyun_voice_index(identifier)  # 应该调用Tinyun专用函数
         
         # 播放语音
         if voice_index is not None and voice_index < len(self.tinyun_voices) and self.tinyun_voices[voice_index] is not None:
@@ -290,6 +290,71 @@ class AudioManager:
         print(f"关键词 '{identifier}' 匹配到 {len(matched_indices)} 个语音，随机选择")
         return selected_index
 
+    def _get_random_tinyun_voice_index(self):
+        """获取随机Tinyun语音索引，避免与上次重复"""
+        valid_indices = [i for i, voice in enumerate(self.tinyun_voices) if voice is not None]
+        
+        if not valid_indices:
+            return None
+        
+        if len(valid_indices) == 1:
+            # 只有一个可用语音，直接返回
+            return valid_indices[0]
+        
+        # 如果有多个可用语音，避免重复
+        if self.last_played_tinyun_voice_index in valid_indices:
+            # 移除上次播放的索引
+            available_indices = [i for i in valid_indices if i != self.last_played_tinyun_voice_index]
+            if available_indices:
+                return self._get_random_choice(available_indices)
+        
+        # 如果上次播放的不在有效列表中，或者没有其他选择，随机选择
+        return self._get_random_choice(valid_indices)
+
+    def _get_matched_tinyun_voice_index(self, identifier):
+        """获取匹配关键词的Tinyun语音索引，避免重复"""
+        matched_indices = []
+        for keyword, index in self.tinyun_voice_map.items():  # 使用tinyun_voice_map
+            if identifier in keyword and index < len(self.tinyun_voices) and self.tinyun_voices[index] is not None:
+                matched_indices.append(index)
+        
+        if not matched_indices:
+            print(f"未找到匹配关键词的Tinyun语音: {identifier}")
+            return None
+        
+        if len(matched_indices) == 1:
+            # 只有一个匹配，直接返回
+            print(f"关键词 '{identifier}' 匹配到 1 个Tinyun语音")
+            return matched_indices[0]
+        
+        # 多个匹配时避免重复
+        if self.last_played_tinyun_voice_index in matched_indices:
+            # 移除上次播放的索引
+            available_indices = [i for i in matched_indices if i != self.last_played_tinyun_voice_index]
+            if available_indices:
+                selected_index = self._get_random_choice(available_indices)
+                print(f"关键词 '{identifier}' 匹配到 {len(matched_indices)} 个Tinyun语音，避免重复后随机选择")
+                return selected_index
+        
+        # 如果上次播放的不在匹配列表中，随机选择
+        selected_index = self._get_random_choice(matched_indices)
+        print(f"关键词 '{identifier}' 匹配到 {len(matched_indices)} 个Tinyun语音，随机选择")
+        return selected_index
+
+    def get_tinyun_voice_list(self):
+        """获取可用的Tinyun语音列表"""
+        voice_list = []
+        for i, voice_file in enumerate(TINYUN_VOICE):
+            filename = os.path.basename(voice_file).replace('.wav', '')
+            available = self.tinyun_voices[i] is not None if i < len(self.tinyun_voices) else False
+            voice_list.append({
+                'index': i,
+                'filename': filename,
+                'path': voice_file,
+                'available': available
+            })
+        return voice_list
+
     def play_place_piece_sound(self):
         """播放下棋音效"""
         if self.place_piece_sound:
@@ -306,7 +371,7 @@ class AudioManager:
         """播放胜利音效并暂停背景音乐"""
         self.stop_all_music()  # 停止所有音乐
         if self.winner_music:
-            self.winner_music.setVolume(SOUND_VOLUME-0.15)
+            self.winner_music.setVolume(SOUND_VOLUME*0.1)
             self.winner_music.play()
     
     def play_loser_sound(self):

@@ -37,7 +37,7 @@ class GameStatistics:
     def _play_voice(self, voice_type, volume=1):
         """播放语音并更新冷却时间"""
         if self.audio_manager and self._can_play_voice():
-            self.audio_manager.play_nahita_voice(voice_type, volume=volume)
+            self.audio_manager.play_tinyun_voice(voice_type, volume=1)
             self._last_voice_time = time.time()
             return True
         return False
@@ -77,7 +77,7 @@ class GameStatistics:
             if time_spent >= 25 and not self._催促_25s_played:
                 if self._play_voice("催促"):
                     print(f"玩家已思考{time_spent:.1f}秒，播放25秒催促语音")
-                    self._催促_20s_played = True
+                    self._催促_25s_played = True
             
             # 60秒催促（只播放一次，且遵循冷却）
             elif time_spent >= 60 and not self._催促_60s_played:

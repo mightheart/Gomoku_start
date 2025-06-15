@@ -158,7 +158,7 @@ class CSGOCameraDemo:
         """播放欢迎语音"""
         if hasattr(self, 'audio_manager') and self.audio_manager:
             print("播放首次接近棋盘的欢迎语音")
-            result = self.audio_manager.play_nahita_voice("欢迎", volume=1)
+            result = self.audio_manager.play_tinyun_voice("欢迎", volume=1)
             print(f"欢迎语音播放结果: {result}")
 
     def cleanup(self):

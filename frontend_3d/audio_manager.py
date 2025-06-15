@@ -3,7 +3,7 @@ import os
 import random
 import time
 from utils.constants import (
-    BGM_LIST, NAHITA_VOICE, SOUND_CLICK, SOUND_DRAG, WINNER_MUSIC, LOSER_MUSIC, SOUND_VOLUME
+    BGM_LIST, NAHITA_VOICE, TINYUN_VOICE, SOUND_CLICK, SOUND_DRAG, WINNER_MUSIC, LOSER_MUSIC, SOUND_VOLUME
 )
 
 class AudioManager:
@@ -29,6 +29,11 @@ class AudioManager:
         self.nahita_voice_map = {}  # 用于关键词映射
         self.last_played_voice_index = -1  # 记录上次播放的语音索引
         
+        # Tinyun语音
+        self.tinyun_voices = []
+        self.tinyun_voice_map = {}  # 用于关键词映射
+        self.last_played_tinyun_voice_index = -1  # 记录上次播放的语音索引
+
         # 使用多种方式确保真正的随机性
         self._init_random_seed()
         
@@ -95,6 +100,20 @@ class AudioManager:
                 else:
                     self.nahita_voices.append(None)
                     print(f"Nahita语音文件不存在: {voice_file}")
+
+            # 加载Tinyun语音
+            for i, voice_file in enumerate(TINYUN_VOICE):
+                if os.path.exists(voice_file):
+                    voice = self.loader.loadSfx(voice_file)
+                    if voice:
+                        self.tinyun_voices.append(voice)
+                        # 创建关键词映射，从文件名提取关键词
+                        filename = os.path.basename(voice_file).replace('.wav', '')
+                        self.tinyun_voice_map[filename] = i
+                        print(f"Tinyun语音 {filename} 加载成功")
+                else:
+                    self.tinyun_voices.append(None)
+                    print(f"Tinyun语音文件不存在: {voice_file}")
 
             # 加载背景音乐
             for bgm_file in BGM_LIST:
@@ -165,7 +184,61 @@ class AudioManager:
         else:
             print(f"语音文件不可用: 索引 {voice_index}")
             return False
-    
+
+    def play_tinyun_voice(self, identifier=None, volume=None):
+        """
+        播放Tinyun语音
+        Args:
+            identifier: 可以是以下几种类型：
+                    - int: 索引值 (0-25)
+                    - str: 关键词匹配 (如 "催促", "欢迎", "思考")
+                    - None: 随机播放
+            volume: 音量 (0.0-1.0)，默认使用SOUND_VOLUME
+        
+        Returns:
+            bool: 播放成功返回True，失败返回False
+        """
+        if not self.tinyun_voices:
+            print("没有可用的Tinyun语音")
+            return False
+        
+        # 每次播放前重新随机化（确保真正随机）
+        random.seed(int(time.time() * 1000000) % 2**32)
+        
+        # 确定要播放的语音索引
+        voice_index = None
+        
+        if identifier is None:
+            # 随机播放 - 避免重复
+            voice_index = self._get_random_voice_index()
+        elif isinstance(identifier, int):
+            # 按索引播放
+            if 0 <= identifier < len(self.tinyun_voices):
+                voice_index = identifier
+            else:
+                print(f"Tinyun语音索引超出范围: {identifier}")
+                return False
+        elif isinstance(identifier, str):
+            # 按关键词匹配 - 找到所有匹配项，然后随机选择一个（避免重复）
+            voice_index = self._get_matched_voice_index(identifier)
+        
+        # 播放语音
+        if voice_index is not None and voice_index < len(self.tinyun_voices) and self.tinyun_voices[voice_index] is not None:
+            voice = self.tinyun_voices[voice_index]
+            voice.setVolume(volume if volume is not None else SOUND_VOLUME)
+            voice.play()
+            
+            # 记录这次播放的索引
+            self.last_played_tinyun_voice_index = voice_index
+            
+            # 获取文件名用于日志
+            filename = os.path.basename(TINYUN_VOICE[voice_index]).replace('.wav', '')
+            print(f"播放Tinyun语音: {filename} (索引: {voice_index})")
+            return True
+        else:
+            print(f"Tinyun语音文件不可用: 索引 {voice_index}")
+            return False
+
     def _get_random_voice_index(self):
         """获取随机语音索引，避免与上次重复"""
         valid_indices = [i for i, voice in enumerate(self.nahita_voices) if voice is not None]
@@ -216,20 +289,6 @@ class AudioManager:
         selected_index = self._get_random_choice(matched_indices)
         print(f"关键词 '{identifier}' 匹配到 {len(matched_indices)} 个语音，随机选择")
         return selected_index
-    
-    def get_nahita_voice_list(self):
-        """获取可用的Nahita语音列表"""
-        voice_list = []
-        for i, voice_file in enumerate(NAHITA_VOICE):
-            filename = os.path.basename(voice_file).replace('.wav', '')
-            available = self.nahita_voices[i] is not None if i < len(self.nahita_voices) else False
-            voice_list.append({
-                'index': i,
-                'filename': filename,
-                'path': voice_file,
-                'available': available
-            })
-        return voice_list
 
     def play_place_piece_sound(self):
         """播放下棋音效"""

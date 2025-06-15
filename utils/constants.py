@@ -149,9 +149,37 @@ NAHITA_VOICE = [
                 "sound/nahita/催促，想好下哪了吗.wav",
                 "sound/nahita/催促，不知道干什么的话.......wav"
                ]
+TINYUN_VOICE = [
+                "sound/tinyun/催促，哎呀～方才是我失言，恩公不要往心里去啦.wav",
+                "sound/tinyun/催促，哎呀都这个时辰了.wav",
+                "sound/tinyun/催促，恩公别闪到腰了.wav",
+                "sound/tinyun/催促，还得是小女子我.wav",
+                "sound/tinyun/催促，我先活动活动手脚好了.wav",
+                "sound/tinyun/欢迎，别小瞧我.wav",
+                "sound/tinyun/欢迎，敢请问恩公大名？.wav",
+                "sound/tinyun/欢迎，来下棋吗.wav",
+                "sound/tinyun/思考，啊？.wav",
+                "sound/tinyun/思考，恩公不必如此.wav",
+                "sound/tinyun/思考，不错.wav",
+                "sound/tinyun/思考，恩公明察.wav",
+                "sound/tinyun/思考，麻烦啊.wav",
+                "sound/tinyun/思考，哼哼.wav",
+                "sound/tinyun/思考，唔....wav",
+                "sound/tinyun/玩家胜利，恩公了不得.wav",
+                "sound/tinyun/玩家胜利，给恩公烹上一桌好菜.wav",
+                "sound/tinyun/玩家胜利，可以回去了吗.wav",
+                "sound/tinyun/玩家胜利，小女子会继续努力.wav",
+                "sound/tinyun/玩家胜利，这...我从不怀疑.wav",
+                "sound/tinyun/玩家胜利，至少我进步了.wav",
+                "sound/tinyun/玩家失败，恩公误会.wav",
+                "sound/tinyun/玩家失败，承蒙关心.wav",
+                "sound/tinyun/玩家失败，这算是恭维？.wav",
+                "sound/tinyun/玩家失败，小女子不会乱嚼舌根.wav",
+                "sound/tinyun/玩家失败，瞧瞧我的缜密心思.wav",
+                ]
 WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
-LOSER_MUSIC = "sound/nahita/摸摸头.wav"  # 失败音乐
-SOUND_VOLUME = 0.2  # BGM默认音量
+LOSER_MUSIC = "sound/nahita/loser_music.wav"  # 失败音乐
+SOUND_VOLUME = 0.18  # BGM默认音量
 
 # 游戏统计和功能常量
 MAX_UNDO_STEPS = 3                  # 最大悔棋次数

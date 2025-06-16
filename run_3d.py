@@ -20,20 +20,20 @@ class MainApp(ShowBase):
         self.accept("start-gomoku", self.start_gomoku)
         self.accept("back-to-csgo", self.back_to_csgo)
 
-    def start_gomoku(self, camera_pos, camera_hpr):
-        # 记录进入棋盘时的位置
+    def start_gomoku(self, camera_pos, camera_hpr, board_id=1):
         self.last_camera_pos = camera_pos
         self.last_camera_hpr = camera_hpr
-        # 清理旧的 gomoku_mode
         if self.gomoku_mode:
             self.gomoku_mode.cleanup()
             self.gomoku_mode = None
-        # 清理CSGO模式
         if self.csgo_mode:
             self.csgo_mode.cleanup()
             self.csgo_mode = None
-        # 启动Gomoku模式
-        self.gomoku_mode = Gomoku_Start(self)
+        # 进入不同棋盘，传递不同参数
+        if board_id == 1:
+            self.gomoku_mode = Gomoku_Start(self, ai_type="classical", board_y=0)
+        else:
+            self.gomoku_mode = Gomoku_Start(self, ai_type="minimax", board_y=-100)
         self.mode = "gomoku"
 
     def back_to_csgo(self):

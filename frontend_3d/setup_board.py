@@ -9,9 +9,11 @@ from utils.constants import (
 from utils.helpers import square_pos, square_color
 
 class BoardSetup:
-    def __init__(self, loader, render):
+    def __init__(self, loader, render, opponent_model_path="models/Raiden shogun.glb",opponent_model_position=OPPONENT_MODEL_POSITION):
         self.loader = loader
         self.render = render
+        self.opponent_model_path = opponent_model_path
+        self.opponent_model_position = opponent_model_position
         self.squares = [None for _ in range(TOTAL_SQUARES)]
         self.square_root = None
         self.white_box = None
@@ -63,7 +65,7 @@ class BoardSetup:
         """创建棋盒及其装饰"""
         # 白棋盒
         self.white_box = self.loader.loadModel("models/square")
-        self.white_box.reparentTo(self.render)
+        self.white_box.reparentTo(self.square_root)  # 挂到square_root
         self.white_box.setPos(WHITE_BOX_POS)
         self.white_box.setTransparency(True)
         self.white_box.setColor(1, 1, 1, 0)
@@ -75,7 +77,7 @@ class BoardSetup:
         # 白棋盒装饰
         self.deco_white = self.loader.loadModel("models/qihe.obj")
         if self.deco_white:
-            self.deco_white.reparentTo(self.render)
+            self.deco_white.reparentTo(self.square_root)  # 挂到square_root
             self.deco_white.setPos(
                 WHITE_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
                 WHITE_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
@@ -86,7 +88,7 @@ class BoardSetup:
             self.deco_white.setColor(WHITE_3D)
         # 黑棋盒
         self.black_box = self.loader.loadModel("models/square")
-        self.black_box.reparentTo(self.render)
+        self.black_box.reparentTo(self.square_root)  # 挂到square_root
         self.black_box.setPos(BLACK_BOX_POS)
         self.black_box.setTransparency(True)
         self.black_box.setColor(1, 1, 1, 0)
@@ -98,7 +100,7 @@ class BoardSetup:
         # 黑棋盒装饰
         self.deco_black = self.loader.loadModel("models/qihe.obj")
         if self.deco_black:
-            self.deco_black.reparentTo(self.render)
+            self.deco_black.reparentTo(self.square_root)  # 挂到square_root
             self.deco_black.setPos(
                 BLACK_BOX_POS[0] + DECORATION_POSITION_OFFSET[0],
                 BLACK_BOX_POS[1] + DECORATION_POSITION_OFFSET[1],
@@ -122,10 +124,10 @@ class BoardSetup:
             )
             self.thickness_model.setColor(0.71, 0.55, 0.35, 1)
         # 对手模型
-        self.opponent_model = self.loader.loadModel("models/Raiden shogun.glb")
+        self.opponent_model = self.loader.loadModel(self.opponent_model_path)
         if self.opponent_model:
             self.opponent_model.reparentTo(self.square_root)
-            self.opponent_model.setPos(*OPPONENT_MODEL_POSITION)
+            self.opponent_model.setPos(*self.opponent_model_position)
             self.opponent_model.setScale(*OPPONENT_MODEL_SCALE)
             self.opponent_model.setHpr(*OPPONENT_MODEL_ROTATION)
 

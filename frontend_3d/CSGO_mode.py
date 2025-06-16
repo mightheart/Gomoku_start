@@ -6,7 +6,7 @@ from frontend_3d.setup_scene import SceneSetup
 from frontend_3d.setup_board import BoardSetup
 from frontend_3d.audio_manager import AudioManager
 import sys
-
+from utils.constants import OPPONENT_MODEL_POSITION
 class CSGOCameraDemo:
     def __init__(self, base):
         self.base = base
@@ -32,7 +32,7 @@ class CSGOCameraDemo:
 
     def _setup_camera(self):
         self.disableMouse()
-        self.camera.setPos(0, -35, 5)
+        self.camera.setPos(0, -135, 5)
         self.pitch = 0
         self.yaw = 0
 
@@ -46,8 +46,19 @@ class CSGOCameraDemo:
         self.ground = self.scene_setup.ground_model
 
     def _init_board(self):
-        self.board_setup = BoardSetup(self.loader, self.render)
+        # 第一个棋盘
+        self.board_setup = BoardSetup(self.loader, self.render,opponent_model_path="models/Raiden shogun.glb")
         self.board_setup.setup_board()
+        self.board_setup.square_root.setY(0)
+
+        # 第二个棋盘
+        self.board_setup_2 = BoardSetup(
+            self.loader, 
+            self.render,
+            opponent_model_path="models/lulu.glb",
+            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5))
+        self.board_setup_2.setup_board()
+        self.board_setup_2.square_root.setY(-100)
 
     def _init_controls(self):
         self.mouse_sensitivity = 0.05
@@ -128,15 +139,25 @@ class CSGOCameraDemo:
     def check_gomoku_area(self, task):
         cam_pos = self.base.camera.getPos()
         from panda3d.core import Vec3
-        gomoku_center = Vec3(0, 0, 0)
+        gomoku_center_1 = Vec3(0, 0, 0)
+        gomoku_center_2 = Vec3(0, -100, 0)
         radius = 20
-        if (cam_pos - gomoku_center).length() < radius:
+        near_board = None
+        if (cam_pos - gomoku_center_1).length() < radius:
+            near_board = 1
+        elif (cam_pos - gomoku_center_2).length() < radius:
+            near_board = 2
+
+        if near_board:
             if not self.in_gomoku_area:
                 self.in_gomoku_area = True
-                self.hint_text = OnscreenText("Press space to enter the game", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
-                self.base.accept("space", self._start_gomoku)
-                
-                # 首次触发时播放欢迎语音
+                if near_board ==1:
+                    self.hint_text = OnscreenText(
+                    f"Press space to enter the Challenging mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                else:
+                    self.hint_text = OnscreenText(
+                    f"Press space to enter the Easy mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                self.base.accept("space", lambda: self._start_gomoku(near_board))
                 if not self._welcome_voice_played:
                     self._play_welcome_voice()
                     self._welcome_voice_played = True
@@ -149,10 +170,10 @@ class CSGOCameraDemo:
                 self.base.ignore("space")
         return Task.cont
 
-    def _start_gomoku(self):
+    def _start_gomoku(self, board_id=1):
         # 通知主程序切换到Gomoku模式
         if hasattr(self.base, "messenger"):
-            self.base.messenger.send("start-gomoku", [self.base.camera.getPos(), self.base.camera.getHpr()])
+            self.base.messenger.send("start-gomoku", [self.base.camera.getPos(), self.base.camera.getHpr(), board_id])
 
     def _play_welcome_voice(self):
         """播放欢迎语音"""

@@ -32,8 +32,6 @@ class MousePicker:
         self.picker_node.addSolid(self.picker_ray)
         self.picker.addCollider(self.picker_np, self.pq)
         
-        # 创建高亮指示器
-        self._create_highlight_indicator()
 
         # 状态变量
         self.hi_sq = False
@@ -68,7 +66,7 @@ class MousePicker:
                 lines.drawTo(x, y, 0)
         
         # 创建节点
-        self.highlight_circle = self.render.attachNewNode(lines.create())
+        self.highlight_circle = self.base.square_root.attachNewNode(lines.create())
         self.highlight_circle.hide()  # 初始隐藏
 
     def set_board_data(self, squares, pieces=None):
@@ -118,7 +116,8 @@ class MousePicker:
 
         # 创建临时棋子跟随鼠标
         color = WHITE_3D if box_type == 'white' else PIECEBLACK
-        self.temp_piece = Pawn(-1, color, self.base)  # -1表示临时位置
+        self.temp_piece = Pawn(-1, color, self.base)
+        self.temp_piece.obj.reparentTo(self.base.square_root)
         self.dragging_new_piece = True
         print(f"从{box_type}棋盒创建新棋子")
 
@@ -191,7 +190,10 @@ class MousePicker:
         if self.dragging_new_piece and self.temp_piece:
             near_point = self.render.getRelativePoint(self.camera, self.picker_ray.getOrigin())
             near_vec = self.render.getRelativeVector(self.camera, self.picker_ray.getDirection())
-            self.temp_piece.obj.setPos(point_at_z(PIECE_DRAG_HEIGHT, near_point, near_vec))
+            # 拖拽时
+            global_pos = point_at_z(PIECE_DRAG_HEIGHT, near_point, near_vec)
+            local_pos = self.base.square_root.getRelativePoint(self.render, global_pos)
+            self.temp_piece.obj.setPos(local_pos)
         
         # 碰撞检测 - 检测整个场景
         self.picker.traverse(self.render)
@@ -215,7 +217,7 @@ class MousePicker:
                 row = i // BOARD_SIZE
                 col = i % BOARD_SIZE
                 if self.game_instance and self.game_instance.chessboard.is_empty(row, col):
-                    # 显示圆形高亮指示器在选中的格子上
+                    # 高亮指示器挂在 square_root 下，直接用 square_pos(i)
                     square_position = square_pos(i)
                     self.highlight_circle.setPos(square_position.x, square_position.y, square_position.z + 0.02)
                     self.highlight_circle.show()

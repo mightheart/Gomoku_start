@@ -25,7 +25,7 @@ from Gomoku_ai_minimax.ai import MinimaxAIPlayer
 class Gomoku_Start(ShowBase):
     """五子棋游戏主类 - 重构版本"""
     
-    def __init__(self,base):
+    def __init__(self, base, ai_type="classical", board_y=0):
         self.base=base
         for attr in dir(base):
             if not attr.startswith('_'):
@@ -47,7 +47,12 @@ class Gomoku_Start(ShowBase):
         
         # 游戏组件
         self.chessboard = ChessBoard(size=BOARD_SIZE)
-        self.ai_player = MinimaxAIPlayer()
+        if ai_type == "classical":
+            self.ai_player = AIPlayer()
+            opponent_model_path = "models/Raiden shogun.glb"
+        else:
+            self.ai_player = MinimaxAIPlayer()
+            opponent_model_path = "models/lulu.glb"
         
         # 棋盘数据
         self.squares = [None for _ in range(TOTAL_SQUARES)]
@@ -57,19 +62,23 @@ class Gomoku_Start(ShowBase):
         self._init_managers()
         
         # 初始化游戏组件
-        self._setup_camera()
+        self._setup_camera(board_y)
         
         # 初始化场景和棋盘外观
         self.scene_setup = SceneSetup(self.loader, self.render, self.taskMgr)
         self.scene_setup.setup_lighting()
         self.scene_setup.load_scene()
 
-        self.board_setup = BoardSetup(self.loader, self.render)
+        self.board_setup = BoardSetup(self.loader, self.render, opponent_model_path=opponent_model_path)
         self.board_setup.setup_board()
         self.squares = self.board_setup.squares
-        self.square_root=self.board_setup.square_root
-        
-        #执行任务
+        self.square_root = self.board_setup.square_root
+        self.square_root.setY(board_y)
+
+        # 创建高亮指示器需要在square_root创建完后再创建
+        self.mouse_picker._create_highlight_indicator()
+
+        # 执行任务
         self._start_tasks()
         
     
@@ -91,14 +100,13 @@ class Gomoku_Start(ShowBase):
         self.mouse_picker.set_board_data(self.squares, self.pieces)
         self.mouse_picker.set_game_instance(self)
     
-    def _setup_camera(self):
+    def _setup_camera(self, board_y):
         """设置摄像机"""
         self.disableMouse()
-        self.camera.setPos(*CAMERA_INITIAL_POSITION)
+        cam_x, cam_y, cam_z = CAMERA_INITIAL_POSITION
+        cam_y += board_y
+        self.camera.setPos(cam_x, cam_y - 4, cam_z)
         self.camera.setHpr(*CAMERA_INITIAL_ANGLES)
-        self.camera.setX(self.camera.getX() + 0)
-        self.camera.setY(self.camera.getY() + -4)
-        self.camera.setZ(self.camera.getZ() + 0)
         self.camera.setP(self.camera.getP() + 10)
     
     def _start_tasks(self):
@@ -299,22 +307,24 @@ class Gomoku_Start(ShowBase):
             if self.pieces[i] is not None:
                 self.pieces[i].obj.removeNode()
                 self.pieces[i] = None
-        
+
         # 重新创建棋子
         for row in range(BOARD_SIZE):
             for col in range(BOARD_SIZE):
                 piece_type = self.chessboard.get_stone(row, col)
                 if piece_type != PIECE_EMPTY:
                     square_index = row * BOARD_SIZE + col
-                    
+
                     if piece_type == PIECE_BLACK:
                         color = PIECEBLACK
                     elif piece_type == PIECE_WHITE:
                         color = WHITE_3D
                     else:
                         continue
-                    
+
                     piece = Pawn(square_index, color, self)
+                    # 关键：棋子obj要reparentTo(self.square_root)
+                    piece.obj.reparentTo(self.square_root)
                     piece.obj.setPos(square_pos(square_index))
                     self.pieces[square_index] = piece
     

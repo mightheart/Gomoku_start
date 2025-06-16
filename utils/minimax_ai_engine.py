@@ -3,7 +3,7 @@ from .utils_minimax import *
 import math
 
 class MinimaxAIEngine:
-    def __init__(self, depth=3):
+    def __init__(self, depth=5):
         self.depth = depth
         self.board_size = BOARD_SIZE
         self.boardMap = [[0 for j in range(self.board_size)] for i in range(self.board_size)]
@@ -122,16 +122,25 @@ class MinimaxAIEngine:
     def evaluate(self, i, j, board_value, turn, bound):
         value_before = 0
         value_after = 0
-        
+        opponent_weight = 3.0  # 对对方威胁的加权系数
+
         for pattern in self.patternDict:
             score = self.patternDict[pattern]
-            value_before += self.countPattern(i, j, pattern, abs(score), bound, -1) * score
-            
-            # Make move temporarily
-            original_state = self.boardMap[i][j]
-            self.boardMap[i][j] = turn
-            value_after += self.countPattern(i, j, pattern, abs(score), bound, 1) * score
-            self.boardMap[i][j] = original_state  # Restore
+            # 己方棋型
+            if (turn == 1 and score > 0) or (turn == -1 and score < 0):
+                value_before += self.countPattern(i, j, pattern, abs(score), bound, -1) * score
+                # 临时落子
+                original_state = self.boardMap[i][j]
+                self.boardMap[i][j] = turn
+                value_after += self.countPattern(i, j, pattern, abs(score), bound, 1) * score
+                self.boardMap[i][j] = original_state
+            # 对方棋型
+            else:
+                value_before += self.countPattern(i, j, pattern, abs(score), bound, -1) * score * opponent_weight
+                original_state = self.boardMap[i][j]
+                self.boardMap[i][j] = turn
+                value_after += self.countPattern(i, j, pattern, abs(score), bound, 1) * score * opponent_weight
+                self.boardMap[i][j] = original_state
 
         return board_value + value_after - value_before
 

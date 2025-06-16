@@ -60,7 +60,7 @@ class SceneSetup:
             print(f"地面模型加载失败: {e}")
 
         # 角色模型
-        self._load_character_models()
+        #self._load_character_models()
 
         # 星空
         self.load_space()

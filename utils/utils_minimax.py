@@ -9,10 +9,10 @@ def create_pattern_dict():
         # long_5
         patternDict[(x, x, x, x, x)] = 1000000 * x
         # live_4
-        patternDict[(0, x, x, x, x, 0)] = 60000 * x
-        patternDict[(0, x, x, x, 0, x, 0)] = 60000 * x
-        patternDict[(0, x, 0, x, x, x, 0)] = 60000 * x
-        patternDict[(0, x, x, 0, x, x, 0)] = 60000 * x
+        patternDict[(0, x, x, x, x, 0)] = 25000 * x
+        patternDict[(0, x, x, x, 0, x, 0)] = 20000 * x
+        patternDict[(0, x, 0, x, x, x, 0)] = 20000 * x
+        patternDict[(0, x, x, 0, x, x, 0)] = 20000 * x
         # go_4
         patternDict[(0, x, x, x, x, y)] = 10000 * x
         patternDict[(y, x, x, x, x, 0)] = 10000 * x

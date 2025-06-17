@@ -32,8 +32,10 @@ class MainApp(ShowBase):
         # 进入不同棋盘，传递不同参数
         if board_id == 1:
             self.gomoku_mode = Gomoku_Start(self, ai_type="classical", board_y=0)
-        else:
+        elif board_id == 2:
             self.gomoku_mode = Gomoku_Start(self, ai_type="minimax", board_y=-100)
+        elif board_id == 3:
+            self.gomoku_mode = Gomoku_Start(self, ai_type="mcts", board_y=-200)
         self.mode = "gomoku"
 
     def back_to_csgo(self):

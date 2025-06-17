@@ -7,10 +7,11 @@ from utils.constants import (
     CAMERA_ROTATION_SPEED, CAMERA_MAX_PITCH, CAMERA_MIN_PITCH,
     CAMERA_ACCELERATION, CAMERA_MAX_SPEED_MULTIPLIER, CAMERA_ACCELERATION_DELAY
 )
+
 class CameraController:
     """摄像机控制器"""
     
-    def __init__(self):
+    def __init__(self, rotation_center=(0, 0, 0)):
         self.key_map = {
             "cam-left": False,
             "cam-right": False,
@@ -23,6 +24,15 @@ class CameraController:
         self.acceleration = CAMERA_ACCELERATION  # 加速度系数（度/秒²）
         self.max_speed = CAMERA_ROTATION_SPEED * CAMERA_MAX_SPEED_MULTIPLIER  # 最大速度限制
         self.acceleration_delay = CAMERA_ACCELERATION_DELAY  # 开始加速前的延迟时间（秒）
+        
+        # 旋转中心点
+        self.rotation_center = rotation_center
+        print(f"摄像机旋转中心设置为: {self.rotation_center}")
+
+    def set_rotation_center(self, center):
+        """设置旋转中心点"""
+        self.rotation_center = center
+        print(f"摄像机旋转中心更新为: {self.rotation_center}")
 
     def set_key(self, key, value):
         """设置键位状态"""
@@ -83,17 +93,31 @@ class CameraController:
         """水平旋转摄像机"""
         pos = camera.getPos()
         h = camera.getH()
-        p = camera.getP()
         
-        # 计算当前到中心的距离（只考虑XY平面的距离）
-        horizontal_radius = (pos.x**2 + pos.y**2)**0.5
+        # 计算相对于旋转中心的位置
+        rel_x = pos.x - self.rotation_center[0]
+        rel_y = pos.y - self.rotation_center[1]
+        rel_z = pos.z - self.rotation_center[2]
+        
+        # 计算当前到旋转中心的水平距离
+        horizontal_radius = (rel_x**2 + rel_y**2)**0.5
+        
+        # 如果距离太小，使用默认半径
+        if horizontal_radius < 0.1:
+            horizontal_radius = 10.0
+        
         h += speed * dt
         
-        # 计算新的X和Y位置，保持Z不变
-        new_x = horizontal_radius * math.sin(math.radians(h))
-        new_y = -horizontal_radius * math.cos(math.radians(h))
+        # 计算新的相对位置
+        new_rel_x = horizontal_radius * math.sin(math.radians(h))
+        new_rel_y = -horizontal_radius * math.cos(math.radians(h))
         
-        camera.setPos(new_x, new_y, pos.z)
+        # 转换回世界坐标
+        new_x = new_rel_x + self.rotation_center[0]
+        new_y = new_rel_y + self.rotation_center[1]
+        new_z = rel_z + self.rotation_center[2]  # Z保持相对高度
+        
+        camera.setPos(new_x, new_y, new_z)
         camera.setH(h)
 
     def _rotate_vertical(self, dt, speed, camera):
@@ -103,21 +127,32 @@ class CameraController:
         
         # 计算新的俯仰角
         new_p = p + speed * dt
-        # new_p = max(CAMERA_MIN_PITCH, min(CAMERA_MAX_PITCH, new_p))
         
         # 如果角度没有实际变化，直接返回
         if abs(new_p - p) < 0.001:
             return
         
+        # 计算相对于旋转中心的位置
+        rel_x = pos.x - self.rotation_center[0]
+        rel_y = pos.y - self.rotation_center[1]
+        rel_z = pos.z - self.rotation_center[2]
+        
         # 计算水平距离
-        horizontal_radius = (pos.x**2 + pos.y**2)**0.5
+        horizontal_radius = (rel_x**2 + rel_y**2)**0.5
+        
+        # 如果距离太小，使用默认半径
+        if horizontal_radius < 0.1:
+            horizontal_radius = 10.0
         
         # 计算Z轴的变化量（增量式）
         old_z_ratio = math.tan(math.radians(-p)) if abs(p) < 89 else 0
         new_z_ratio = math.tan(math.radians(-new_p)) if abs(new_p) < 89 else 0
         
         delta_z = horizontal_radius * (new_z_ratio - old_z_ratio)
-        new_z = pos.z + delta_z
+        new_rel_z = rel_z + delta_z
+        
+        # 转换回世界坐标
+        new_z = new_rel_z + self.rotation_center[2]
         
         camera.setPos(pos.x, pos.y, new_z)
         camera.setP(new_p)

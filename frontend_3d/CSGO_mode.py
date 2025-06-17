@@ -32,7 +32,7 @@ class CSGOCameraDemo:
 
     def _setup_camera(self):
         self.disableMouse()
-        self.camera.setPos(0, -135, 5)
+        self.camera.setPos(0, -235, 5)  # 初始坐标
         self.pitch = 0
         self.yaw = 0
 
@@ -47,7 +47,11 @@ class CSGOCameraDemo:
 
     def _init_board(self):
         # 第一个棋盘
-        self.board_setup = BoardSetup(self.loader, self.render,opponent_model_path="models/Raiden shogun.glb")
+        self.board_setup = BoardSetup(
+            self.loader, 
+            self.render,
+            opponent_model_path="models/Raiden shogun.glb"
+            )
         self.board_setup.setup_board()
         self.board_setup.square_root.setY(0)
 
@@ -56,9 +60,20 @@ class CSGOCameraDemo:
             self.loader, 
             self.render,
             opponent_model_path="models/lulu.glb",
-            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5))
+            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
+            )
         self.board_setup_2.setup_board()
         self.board_setup_2.square_root.setY(-100)
+
+        # 第三个棋盘
+        self.board_setup_3 = BoardSetup(
+            self.loader,
+            self.render,
+            opponent_model_path="models/lulu.glb",
+            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
+            )
+        self.board_setup_3.setup_board()
+        self.board_setup_3.square_root.setY(-200)
 
     def _init_controls(self):
         self.mouse_sensitivity = 0.05
@@ -141,12 +156,16 @@ class CSGOCameraDemo:
         from panda3d.core import Vec3
         gomoku_center_1 = Vec3(0, 0, 0)
         gomoku_center_2 = Vec3(0, -100, 0)
+        gomoku_center_3 = Vec3(0, -200, 0)
+        # 棋盘中心点
         radius = 20
         near_board = None
         if (cam_pos - gomoku_center_1).length() < radius:
             near_board = 1
         elif (cam_pos - gomoku_center_2).length() < radius:
             near_board = 2
+        elif (cam_pos - gomoku_center_3).length() < radius:
+            near_board = 3
 
         if near_board:
             if not self.in_gomoku_area:
@@ -154,9 +173,12 @@ class CSGOCameraDemo:
                 if near_board ==1:
                     self.hint_text = OnscreenText(
                     f"Press space to enter the Challenging mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
-                else:
+                elif near_board == 2:
                     self.hint_text = OnscreenText(
                     f"Press space to enter the Easy mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                elif near_board == 3:
+                    self.hint_text = OnscreenText(
+                    f"Press space to enter the Stupid mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
                 self.base.accept("space", lambda: self._start_gomoku(near_board))
                 if not self._welcome_voice_played:
                     self._play_welcome_voice()

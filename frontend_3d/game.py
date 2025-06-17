@@ -22,6 +22,8 @@ from Gomoku_ai_classical.ai import AIPlayer
 from .setup_scene import SceneSetup
 from .setup_board import BoardSetup
 from Gomoku_ai_minimax.ai import MinimaxAIPlayer
+from Gomoku_ai_MCTS.ai import MCTSAIPlayer
+
 class Gomoku_Start(ShowBase):
     """五子棋游戏主类 - 重构版本"""
     
@@ -30,6 +32,10 @@ class Gomoku_Start(ShowBase):
         for attr in dir(base):
             if not attr.startswith('_'):
                 setattr(self, attr, getattr(base, attr))
+        
+        # 存储AI类型和棋盘位置
+        self.ai_type = ai_type
+        self.board_y = board_y
         
         #鼠标光标重新显示
         props = WindowProperties()
@@ -48,12 +54,18 @@ class Gomoku_Start(ShowBase):
         # 游戏组件
         self.chessboard = ChessBoard(size=BOARD_SIZE)
         if ai_type == "classical":
+            # 使用经典AI
             self.ai_player = AIPlayer()
             opponent_model_path = "models/Raiden shogun.glb"
-        else:
+        elif ai_type == "minimax":
+            # 使用Minimax AI
             self.ai_player = MinimaxAIPlayer()
             opponent_model_path = "models/lulu.glb"
-        
+        elif ai_type == "mcts":
+            # 使用MCTS AI
+            self.ai_player = MCTSAIPlayer()
+            opponent_model_path = "models/lulu.glb"
+
         # 棋盘数据
         self.squares = [None for _ in range(TOTAL_SQUARES)]
         self.pieces = [None for _ in range(TOTAL_SQUARES)]
@@ -89,8 +101,11 @@ class Gomoku_Start(ShowBase):
         self.statistics = GameStatistics(self.audio_manager)
         self.effects_manager = EffectsManager(self.render, self.taskMgr)
         
-        # 创建控制器
-        self.camera_controller = CameraController()
+        # 根据AI类型确定旋转中心
+        rotation_center = self._get_rotation_center_by_ai_type(self.ai_type, self.board_y)
+        
+        # 创建控制器时传入旋转中心
+        self.camera_controller = CameraController(rotation_center)
         self.mouse_picker = MousePicker(self)
         
         # 输入管理器需要在控制器创建后初始化
@@ -99,6 +114,15 @@ class Gomoku_Start(ShowBase):
         # 设置引用
         self.mouse_picker.set_board_data(self.squares, self.pieces)
         self.mouse_picker.set_game_instance(self)
+    
+    def _get_rotation_center_by_ai_type(self, ai_type, board_y):
+        """根据AI类型获取旋转中心"""
+        if ai_type == "minimax":
+            return (0, -100, 0)
+        elif ai_type == "mcts":
+            return (0, -200, 0)
+        else:  # classical
+            return (0, board_y, 0)
     
     def _setup_camera(self, board_y):
         """设置摄像机"""

@@ -1,7 +1,13 @@
+""" 
+AI相关功能 - MCTS版本
+"""
+import math
 import copy
 import time
 import random
-import math
+from utils.constants import *
+from utils.chessboard import ChessBoard
+from utils.gomoku_ai import GomokuAI
 
 class MCTSNode:
     """MCTS节点"""
@@ -91,40 +97,42 @@ class MCTSNode:
         return exploitation + exploration
 
 
-class GomokuMCTS:
-    def __init__(self, player=2, opponent=1, iterations=1000, max_time=5.0):
-        """
-        五子棋MCTS AI算法
-        player: AI棋子标识 (默认2)
-        opponent: 对手棋子标识 (默认1)
-        iterations: 最大模拟次数
-        max_time: 最大思考时间(秒)
-        """
-        self.player = player
-        self.opponent = opponent
+class MCTSAIEngine:
+    """MCTS AI核心引擎"""
+    
+    def __init__(self, iterations=1000, max_time=5.0, c_param=1.4):
         self.iterations = iterations
         self.max_time = max_time
+        self.c_param = c_param
+        self.board_size = 15
+        self.boardMap = None
+        self.currentI = 0
+        self.currentJ = 0
     
-    def get_next_move(self, board):
+    def get_next_move(self, board, player):
         """
-        输入15x15棋盘数组，返回AI的下棋位置和更新后的棋盘
-        board: 15x15的二维数组，0表示空位，1表示对手，2表示AI
-        返回: (row, col, new_board) 或 None如果没有合法移动
+        获取下一步移动
+        board: 15x15的二维数组，0表示空位，1和-1表示不同玩家
+        player: 当前玩家标识 (1 或 -1)
+        返回: (row, col)
         """
         start_time = time.time()
         
+        # 转换棋盘格式
+        converted_board = self.convert_board_format(board)
+        
         # 创建根节点
-        root = MCTSNode(board, self.player)
+        mcts_player = 1 if player == 1 else 2
+        root = MCTSNode(converted_board, mcts_player)
         
         # 如果没有合法移动
         if not root.get_legal_moves():
-            return None
+            return (7, 7)
         
         # 第一步下中心
         if len(root.get_legal_moves()) == 1 and root.get_legal_moves()[0] == (7, 7):
-            new_board = copy.deepcopy(board)
-            new_board[7][7] = self.player
-            return (7, 7, new_board)
+            self.currentI, self.currentJ = 7, 7
+            return (7, 7)
         
         # MCTS主循环
         iteration = 0
@@ -139,7 +147,7 @@ class GomokuMCTS:
                 node = node.add_child(move)
             
             # 3. 模拟
-            result = self.simulate(node)
+            result = self.simulate(node, mcts_player)
             
             # 4. 反向传播
             self.backpropagate(node, result)
@@ -148,18 +156,31 @@ class GomokuMCTS:
         
         # 选择最佳移动
         if not root.children:
-            return None
+            self.currentI, self.currentJ = 7, 7
+            return (7, 7)
         
         best_child = max(root.children, key=lambda c: c.visits)
-        row, col = best_child.move
+        self.currentI, self.currentJ = best_child.move
         
-        new_board = copy.deepcopy(board)
-        new_board[row][col] = self.player
-        
-        print(f"MCTS完成 {iteration} 次迭代，选择位置 ({row}, {col})")
+        print(f"MCTS完成 {iteration} 次迭代，选择位置 ({self.currentI}, {self.currentJ})")
         print(f"最佳移动访问次数: {best_child.visits}, 胜率: {best_child.wins/best_child.visits:.3f}")
         
-        return (row, col, new_board)
+        return (self.currentI, self.currentJ)
+    
+    def convert_board_format(self, board):
+        """转换棋盘格式：从 1/-1 格式转换为 1/2 格式"""
+        converted = []
+        for row in board:
+            converted_row = []
+            for cell in row:
+                if cell == 0:
+                    converted_row.append(0)
+                elif cell == 1:
+                    converted_row.append(1)
+                elif cell == -1:
+                    converted_row.append(2)
+            converted.append(converted_row)
+        return converted
     
     def select(self, node):
         """选择阶段：使用UCB1选择最佳子节点"""
@@ -167,10 +188,10 @@ class GomokuMCTS:
             if node.untried_moves:
                 return node
             else:
-                node = max(node.children, key=lambda c: c.ucb1_value())
+                node = max(node.children, key=lambda c: c.ucb1_value(self.c_param))
         return node
     
-    def simulate(self, node):
+    def simulate(self, node, ai_player):
         """模拟阶段：随机对局直到游戏结束"""
         current_board = copy.deepcopy(node.board)
         current_player = node.player
@@ -178,7 +199,7 @@ class GomokuMCTS:
         # 检查当前节点是否已经有获胜者
         winner = node.check_winner()
         if winner:
-            return 1 if winner == self.player else 0
+            return 1 if winner == ai_player else 0
         
         # 随机模拟游戏
         max_moves = 50  # 限制模拟长度
@@ -198,14 +219,14 @@ class GomokuMCTS:
             
             # 检查是否获胜
             if self.check_winner_fast(current_board, move, current_player):
-                return 1 if current_player == self.player else 0
+                return 1 if current_player == ai_player else 0
             
             # 切换玩家
             current_player = 3 - current_player
             moves_count += 1
         
         # 如果没有明确胜负，使用简单评估
-        return self.evaluate_simulation_result(current_board)
+        return self.evaluate_simulation_result(current_board, ai_player)
     
     def get_simulation_moves(self, board):
         """获取模拟中的候选移动"""
@@ -267,17 +288,18 @@ class GomokuMCTS:
                 return True
         return False
     
-    def evaluate_simulation_result(self, board):
+    def evaluate_simulation_result(self, board, ai_player):
         """评估模拟结果（当没有明确胜负时）"""
         # 简单的位置评估：更倾向于中心位置
         ai_score = 0
         opponent_score = 0
+        opponent = 3 - ai_player
         
         for i in range(15):
             for j in range(15):
-                if board[i][j] == self.player:
+                if board[i][j] == ai_player:
                     ai_score += self.position_value(i, j)
-                elif board[i][j] == self.opponent:
+                elif board[i][j] == opponent:
                     opponent_score += self.position_value(i, j)
         
         if ai_score > opponent_score:
@@ -297,37 +319,94 @@ class GomokuMCTS:
         while node is not None:
             node.update(result)
             # 对于对手节点，结果需要反转
-            if node.player != self.player:
+            if hasattr(node.parent, 'player') and node.parent and node.parent.player != node.player:
                 result = 1 - result
             node = node.parent
 
 
-# 使用示例
-if __name__ == "__main__":
-    # 创建MCTS AI实例
-    mcts_ai = GomokuMCTS(player=2, opponent=1, iterations=1000, max_time=3.0)
+class MCTSAIPlayer(GomokuAI):
+    """基于MCTS算法的AI玩家"""
     
-    # 创建测试棋盘
-    board = [[0 for _ in range(15)] for _ in range(15)]
+    def __init__(self, iterations=1000, max_time=3.0, c_param=1.4):
+        self.thinking = False
+        self.iterations = iterations
+        self.max_time = max_time
+        self.engine = MCTSAIEngine(iterations, max_time, c_param)
     
-    # 模拟几步棋
-    board[7][7] = 1  # 对手先下中心
-    board[7][8] = 1  # 对手连续下棋
-    board[8][7] = 2  # AI下棋
+    def convert_board(self, board, player_side):
+        """将框架棋盘转换为MCTS引擎的内部表示"""
+        converted = []
+        for row in board:
+            converted_row = []
+            for cell in row:
+                if cell == PIECE_EMPTY:
+                    converted_row.append(0)
+                elif cell == PIECE_BLACK:
+                    # 根据AI角色决定表示
+                    converted_row.append(1 if player_side == PLAYER_BLACK else -1)
+                elif cell == PIECE_WHITE:
+                    converted_row.append(-1 if player_side == PLAYER_BLACK else 1)
+            converted.append(converted_row)
+        return converted
     
-    print("当前棋盘状态:")
-    for i, row in enumerate(board):
-        print(f"{i:2d}: " + ' '.join(str(x) for x in row))
+    def get_next_chessboard(self, chessboard: ChessBoard, player_side: int) -> ChessBoard:
+        """获取AI的下一步棋盘状态"""
+        if chessboard.winner != 0:
+            return chessboard
+        
+        board_size = chessboard.size
+        board_inner = chessboard.board
+        
+        # AI计算下一步
+        row, col = self.get_move(board_inner, board_size, player_side)
+        
+        # 根据player_side确定棋子类型
+        piece_type = PIECE_BLACK if player_side == PLAYER_BLACK else PIECE_WHITE
+        
+        # 更新棋盘状态
+        if 0 <= row < board_size and 0 <= col < board_size and board_inner[row][col] == PIECE_EMPTY:
+            chessboard.place_stone(row, col, player_side)
+        
+        return chessboard
     
-    # AI计算下一步
-    print("\nMCTS AI 开始思考...")
-    result = mcts_ai.get_next_move(board)
+    def get_move(self, board, board_size, player_side):
+        """获取AI的下一步移动"""
+        self.thinking = True
+        try:
+            # 转换棋盘表示
+            converted_board = self.convert_board(board, player_side)
+            
+            # 初始化引擎
+            self.engine = MCTSAIEngine(self.iterations, self.max_time)
+            self.engine.board_size = board_size
+            
+            # 如果是空棋盘，直接返回中心点
+            if all(cell == 0 for row in converted_board for cell in row):
+                center = board_size // 2
+                return center, center
+            
+            # 确定玩家标识 (1 for AI, -1 for opponent)
+            player = 1 if player_side == PLAYER_BLACK else -1
+            
+            # 执行MCTS搜索
+            row, col = self.engine.get_next_move(converted_board, player)
+            
+            print(f"MCTS AI计算结果: ({row}, {col})")
+            return row, col
+        except Exception as e:
+            print(f"MCTS AI计算出错: {e}")
+            return self._get_fallback_move(board, board_size)
+        finally:
+            self.thinking = False
     
-    if result:
-        row, col, new_board = result
-        print(f"\nAI选择位置: ({row}, {col})")
-        print("更新后棋盘:")
-        for i, board_row in enumerate(new_board):
-            print(f"{i:2d}: " + ' '.join(str(x) for x in board_row))
-    else:
-        print("没有可用移动")
+    def _get_fallback_move(self, board, board_size):
+        """备用策略：在棋盘上寻找空位置"""
+        center = board_size // 2
+        for radius in range(board_size // 2 + 1):
+            for dr in range(-radius, radius + 1):
+                for dc in range(-radius, radius + 1):
+                    r, c = center + dr, center + dc
+                    if (0 <= r < board_size and 0 <= c < board_size and 
+                        board[r][c] == PIECE_EMPTY):
+                        return r, c
+        return 0, 0

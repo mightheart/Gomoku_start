@@ -1,5 +1,5 @@
 """ 
-AI相关功能 - MCTS版本 (高质量版) - 防守倾向版
+AI相关功能 - MCTS版本 (高质量版) - 修复版
 """
 import math
 import copy
@@ -11,64 +11,55 @@ from utils.chessboard import ChessBoard
 from utils.gomoku_ai import GomokuAI
 
 class AdvancedPatternEvaluator:
-    """高级五子棋模式评估器 - 防守倾向版"""
+    """高级五子棋模式评估器"""
     
     def __init__(self):
-        # 攻击模式评分（适度降低）
+        # 更详细的模式评分系统
         self.attack_patterns = {
             # 五连 - 必胜
             'OOOOO': 1000000,
             # 活四 - 必胜
-            '_OOOO_': 80000,  # 降低
+            '_OOOO_': 100000,
             # 冲四 - 很强
-            'XOOOO_': 8000, '_OOOOX': 8000,  # 降低
+            'XOOOO_': 10000, '_OOOOX': 10000,
             # 活三 - 强
-            '_OOO_': 3000, '__OOO__': 5000,  # 降低
+            '_OOO_': 5000, '__OOO__': 8000,
             # 眠三
-            'XOOO_': 600, '_OOOX': 600, 'XO_OO_': 400, '_OO_OX': 400,  # 降低
+            'XOOO_': 1000, '_OOOX': 1000, 'XO_OO_': 800, '_OO_OX': 800,
             # 活二
-            '_OO_': 100, '__OO__': 150,  # 降低
+            '_OO_': 200, '__OO__': 300,
             # 眠二
-            'XOO_': 30, '_OOX': 30,  # 降低
+            'XOO_': 50, '_OOX': 50,
         }
         
-        # 防守模式评分（大幅提高）
         self.defense_patterns = {
             # 对手的威胁模式 - 必须防守
-            'XXXXX': 2000000,  # 提高
-            '_XXXX_': 150000,  # 大幅提高
-            'OXXXX_': 25000, '_XXXXO': 25000,  # 大幅提高
-            '_XXX_': 12000, '__XXX__': 18000,  # 大幅提高
-            'OXXX_': 3000, '_XXXO': 3000,  # 大幅提高
-            # 新增更多防守模式
-            'XO_XX_': 2000, '_XX_OX': 2000,  # 跳三防守
-            '_X_XX_': 1500, 'XX_X_': 1500,   # 活二防守
-            'OXX_': 800, '_XXO': 800,        # 简单防守
+            'XXXXX': 500000,
+            '_XXXX_': 50000,
+            'OXXXX_': 10000, '_XXXXO': 10000,
+            '_XXX_': 5000, '__XXX__': 8000,
+            'OXXX_': 1000, '_XXXO': 1000,
         }
         
-        # 特殊战术模式（防守优先）
+        # 特殊战术模式
         self.tactical_patterns = {
-            # 防守双三（更重要）
-            'defense_double_three': 25000,  # 新增
-            # 攻击双三（降低）
-            'double_three': 8000,  # 降低
+            # 双三
+            'double_three': 15000,
             # 三三禁手检测
             'forbidden_three': -50000,
-            # 防守四四（最高优先级）
-            'defense_double_four': 500000,  # 新增
-            # 攻击四四（降低）
-            'double_four': 100000,  # 降低
+            # 四四胜型
+            'double_four': 200000,
         }
     
     def evaluate_position(self, board, row, col, player):
-        """全面评估位置价值 - 防守倾向版"""
+        """全面评估位置价值"""
         if board[row][col] != 0:
             return -1000000  # 非法位置
         
         # 临时放置棋子
         board[row][col] = player
         
-        # 综合评分（防守权重更高）
+        # 综合评分
         attack_score = self._evaluate_attack_patterns(board, row, col, player)
         defense_score = self._evaluate_defense_patterns(board, row, col, player)
         tactical_score = self._evaluate_tactical_patterns(board, row, col, player)
@@ -77,9 +68,7 @@ class AdvancedPatternEvaluator:
         # 恢复棋盘
         board[row][col] = 0
         
-        # 防守权重提高到70%，攻击权重降低到30%
-        total_score = (attack_score * 0.3 + defense_score * 0.7 + 
-                      tactical_score + position_score)
+        total_score = attack_score + defense_score + tactical_score + position_score
         return total_score
     
     def _evaluate_attack_patterns(self, board, row, col, player):
@@ -96,7 +85,7 @@ class AdvancedPatternEvaluator:
         return score
     
     def _evaluate_defense_patterns(self, board, row, col, player):
-        """评估防守模式 - 增强版"""
+        """评估防守模式"""
         score = 0
         opponent = 3 - player
         directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
@@ -109,137 +98,37 @@ class AdvancedPatternEvaluator:
             for pattern, value in self.defense_patterns.items():
                 if pattern in line:
                     score += value
-                    
-        # 额外检查：如果阻止对手形成威胁，额外加分
-        threat_level = self._calculate_threat_level(board, row, col, opponent)
-        score += threat_level * 1000  # 威胁级别加成
         
         # 恢复
         board[row][col] = player
         return score
     
-    def _calculate_threat_level(self, board, row, col, opponent):
-        """计算威胁等级"""
-        threat_level = 0
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-        
-        for dx, dy in directions:
-            # 检查这个方向上对手连子情况
-            consecutive = self._count_consecutive(board, row, col, dx, dy, opponent)
-            open_ends = self._count_open_ends(board, row, col, dx, dy, opponent)
-            
-            # 根据连子数和开放端点计算威胁
-            if consecutive >= 4:
-                threat_level += 10  # 最高威胁
-            elif consecutive == 3 and open_ends >= 1:
-                threat_level += 5   # 高威胁
-            elif consecutive == 2 and open_ends >= 2:
-                threat_level += 2   # 中威胁
-            elif consecutive == 2 and open_ends >= 1:
-                threat_level += 1   # 低威胁
-        
-        return threat_level
-    
-    def _count_consecutive(self, board, row, col, dx, dy, player):
-        """计算连续棋子数"""
-        count = 1  # 包含当前位置
-        
-        # 正方向
-        i, j = row + dx, col + dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            count += 1
-            i, j = i + dx, j + dy
-        
-        # 负方向
-        i, j = row - dx, col - dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            count += 1
-            i, j = i - dx, j - dy
-        
-        return count
-    
-    def _count_open_ends(self, board, row, col, dx, dy, player):
-        """计算开放端点数"""
-        open_ends = 0
-        
-        # 检查正方向端点
-        i, j = row + dx, col + dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            i, j = i + dx, j + dy
-        if 0 <= i < 15 and 0 <= j < 15 and board[i][j] == 0:
-            open_ends += 1
-        
-        # 检查负方向端点
-        i, j = row - dx, col - dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            i, j = i - dx, j - dy
-        if 0 <= i < 15 and 0 <= j < 15 and board[i][j] == 0:
-            open_ends += 1
-        
-        return open_ends
-    
     def _evaluate_tactical_patterns(self, board, row, col, player):
-        """评估战术模式（防守倾向）"""
+        """评估战术模式（双三、四四等）"""
         score = 0
-        opponent = 3 - player
         
-        # 检查防守双三（阻止对手形成双三）
-        board[row][col] = opponent
-        opponent_three_count = self._count_active_threes(board, row, col, opponent)
-        if opponent_three_count >= 2:
-            score += self.tactical_patterns['defense_double_three']
-        board[row][col] = player
-        
-        # 检查防守四四（阻止对手形成双四）
-        board[row][col] = opponent
-        opponent_four_count = self._count_fours(board, row, col, opponent)
-        if opponent_four_count >= 2:
-            score += self.tactical_patterns['defense_double_four']
-        board[row][col] = player
-        
-        # 检查自己的攻击机会（权重降低）
-        own_three_count = self._count_active_threes(board, row, col, player)
-        if own_three_count >= 2:
+        # 检查是否形成双活三
+        three_count = self._count_active_threes(board, row, col, player)
+        if three_count >= 2:
             score += self.tactical_patterns['double_three']
         
-        own_four_count = self._count_fours(board, row, col, player)
-        if own_four_count >= 2:
+        # 检查是否形成双四
+        four_count = self._count_fours(board, row, col, player)
+        if four_count >= 2:
             score += self.tactical_patterns['double_four']
         
         return score
     
     def _evaluate_position_value(self, board, row, col):
         """评估位置本身的价值"""
-        # 距离中心的价值（降低权重）
+        # 距离中心的价值
         center_distance = math.sqrt((row - 7)**2 + (col - 7)**2)
-        center_value = max(0, 50 - center_distance * 3)  # 降低中心价值
+        center_value = max(0, 100 - center_distance * 5)
         
         # 周围棋子密度
         density_value = self._calculate_density(board, row, col)
         
-        # 防守位置价值（新增）
-        defense_position_value = self._calculate_defense_position_value(board, row, col)
-        
-        return center_value + density_value + defense_position_value
-    
-    def _calculate_defense_position_value(self, board, row, col):
-        """计算防守位置价值"""
-        defense_value = 0
-        opponent_pieces = []
-        
-        # 找到所有对手棋子
-        for i in range(15):
-            for j in range(15):
-                if board[i][j] != 0 and board[i][j] != board.get(row, {}).get(col, 0):
-                    opponent_pieces.append((i, j))
-        
-        # 计算到对手棋子的距离，距离越近防守价值越高
-        for op_row, op_col in opponent_pieces:
-            distance = max(abs(row - op_row), abs(col - op_col))
-            if distance <= 2:  # 只考虑近距离防守
-                defense_value += (3 - distance) * 15
-        
-        return defense_value
+        return center_value + density_value
     
     def _get_line_string(self, board, row, col, dx, dy, player):
         """获取某方向的棋子串表示"""
@@ -307,7 +196,7 @@ class AdvancedPatternEvaluator:
             for j in range(max(0, col-2), min(15, col+3)):
                 if board[i][j] != 0:
                     distance = max(abs(i-row), abs(j-col))
-                    density += (3 - distance) * 8  # 稍微降低密度权重
+                    density += (3 - distance) * 10
         return density
 
 class EnhancedMCTSNode:
@@ -445,7 +334,7 @@ class EnhancedMCTSNode:
         return self.wins / self.visits if self.visits > 0 else 0
 
 class HighQualityMCTSEngine:
-    """高质量MCTS引擎 - 防守倾向版"""
+    """高质量MCTS引擎"""
     
     def __init__(self, iterations=3000, max_time=8.0, c_param=1.414):
         self.iterations = iterations
@@ -476,7 +365,7 @@ class HighQualityMCTSEngine:
         if not legal_moves:
             return (7, 7)
         
-        # 紧急移动检查（防守优先）
+        # 紧急移动检查（必胜或必防）
         urgent_move = self._check_urgent_moves(converted_board, mcts_player)
         if urgent_move:
             self.currentI, self.currentJ = urgent_move
@@ -531,16 +420,16 @@ class HighQualityMCTSEngine:
         best_child = self._select_best_move(root)
         self.currentI, self.currentJ = best_child.move
         
-        print(f"防守型MCTS完成 {iteration} 次迭代")
+        print(f"高质量MCTS完成 {iteration} 次迭代")
         print(f"最终选择: {best_child.move}, 访问次数: {best_child.visits}, 胜率: {best_child.get_win_rate():.3f}")
         
         return best_child.move
     
     def _check_urgent_moves(self, board, player):
-        """检查紧急移动（防守优先）"""
+        """检查紧急移动（必胜或必防）"""
         opponent = 3 - player
         
-        # 1. 首先检查是否有必胜移动
+        # 检查是否有必胜移动
         for i in range(15):
             for j in range(15):
                 if board[i][j] == 0:
@@ -551,132 +440,18 @@ class HighQualityMCTSEngine:
                         return (i, j)
                     board[i][j] = 0
         
-        # 2. 重点检查防守（检查多重威胁）
-        defense_moves = []
+        # 检查是否需要防守
         for i in range(15):
             for j in range(15):
                 if board[i][j] == 0:
                     board[i][j] = opponent
                     if self._check_winner_at_position(board, i, j, opponent):
-                        # 评估这个防守移动的紧急程度
-                        urgency = self._evaluate_defense_urgency(board, i, j, opponent)
-                        defense_moves.append((urgency, (i, j)))
+                        board[i][j] = 0
+                        print(f"发现必防移动: ({i}, {j})")
+                        return (i, j)
                     board[i][j] = 0
         
-        if defense_moves:
-            # 选择最紧急的防守移动
-            defense_moves.sort(reverse=True, key=lambda x: x[0])
-            move = defense_moves[0][1]
-            print(f"发现必防移动: {move} (紧急度: {defense_moves[0][0]})")
-            return move
-        
         return None
-    
-    def _evaluate_defense_urgency(self, board, row, col, opponent):
-        """评估防守紧急程度"""
-        urgency = 0
-        
-        # 检查如果不防守，对手是否能形成更多威胁
-        directions = [(0, 1), (1, 0), (1, 1), (1, -1)]
-        
-        for dx, dy in directions:
-            # 计算连子数和开放端点
-            consecutive = self._count_consecutive_for_urgency(board, row, col, dx, dy, opponent)
-            open_ends = self._count_open_ends_for_urgency(board, row, col, dx, dy, opponent)
-            
-            # 根据威胁类型计算紧急度
-            if consecutive >= 5:
-                urgency += 1000  # 最高紧急度
-            elif consecutive == 4 and open_ends >= 1:
-                urgency += 500   # 活四或冲四
-            elif consecutive == 3 and open_ends >= 2:
-                urgency += 100   # 活三
-            elif consecutive == 3 and open_ends >= 1:
-                urgency += 50    # 眠三
-        
-        return urgency
-    
-    def _count_consecutive_for_urgency(self, board, row, col, dx, dy, player):
-        """计算连续棋子数（用于紧急度评估）"""
-        count = 1
-        
-        # 正方向
-        i, j = row + dx, col + dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            count += 1
-            i, j = i + dx, j + dy
-        
-        # 负方向
-        i, j = row - dx, col - dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            count += 1
-            i, j = i - dx, j - dy
-        
-        return count
-    
-    def _count_open_ends_for_urgency(self, board, row, col, dx, dy, player):
-        """计算开放端点数（用于紧急度评估）"""
-        open_ends = 0
-        
-        # 正方向
-        i, j = row + dx, col + dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            i, j = i + dx, j + dy
-        if 0 <= i < 15 and 0 <= j < 15 and board[i][j] == 0:
-            open_ends += 1
-        
-        # 负方向
-        i, j = row - dx, col - dy
-        while 0 <= i < 15 and 0 <= j < 15 and board[i][j] == player:
-            i, j = i - dx, j - dy
-        if 0 <= i < 15 and 0 <= j < 15 and board[i][j] == 0:
-            open_ends += 1
-        
-        return open_ends
-    
-    def _choose_quality_move(self, board, moves, player):
-        """选择高质量移动（防守优先）"""
-        if not moves:
-            return (7, 7)
-        
-        opponent = 3 - player
-        
-        # 1. 检查立即获胜
-        for move in moves:
-            board[move[0]][move[1]] = player
-            if self._check_winner_at_position(board, move[0], move[1], player):
-                board[move[0]][move[1]] = 0
-                return move
-            board[move[0]][move[1]] = 0
-        
-        # 2. 优先检查防守（多个威胁）
-        defense_moves = []
-        for move in moves:
-            board[move[0]][move[1]] = opponent
-            if self._check_winner_at_position(board, move[0], move[1], opponent):
-                urgency = self._evaluate_defense_urgency(board, move[0], move[1], opponent)
-                defense_moves.append((urgency, move))
-            board[move[0]][move[1]] = 0
-        
-        if defense_moves:
-            # 选择最紧急的防守
-            defense_moves.sort(reverse=True, key=lambda x: x[0])
-            return defense_moves[0][1]
-        
-        # 3. 使用评估函数选择最佳移动（防守权重更高）
-        best_moves = []
-        for move in moves:
-            try:
-                score = self.evaluator.evaluate_position(board, move[0], move[1], player)
-                best_moves.append((score, move))
-            except:
-                best_moves.append((0, move))
-        
-        best_moves.sort(reverse=True, key=lambda x: x[0])
-        
-        # 在前5个最佳移动中随机选择（增加多样性）
-        top_moves = [move for _, move in best_moves[:5]]
-        return random.choice(top_moves) if top_moves else random.choice(moves)
     
     def _check_winner_at_position(self, board, row, col, player):
         """检查指定位置是否获胜"""
@@ -765,6 +540,43 @@ class HighQualityMCTSEngine:
         candidates.sort(reverse=True, key=lambda x: x[0])
         return [move for _, move in candidates[:15]]
     
+    def _choose_quality_move(self, board, moves, player):
+        """选择高质量移动"""
+        if not moves:
+            return (7, 7)
+            
+        # 检查立即获胜
+        for move in moves:
+            board[move[0]][move[1]] = player
+            if self._check_winner_at_position(board, move[0], move[1], player):
+                board[move[0]][move[1]] = 0
+                return move
+            board[move[0]][move[1]] = 0
+        
+        # 检查阻止对手获胜
+        opponent = 3 - player
+        for move in moves:
+            board[move[0]][move[1]] = opponent
+            if self._check_winner_at_position(board, move[0], move[1], opponent):
+                board[move[0]][move[1]] = 0
+                return move
+            board[move[0]][move[1]] = 0
+        
+        # 使用评估函数选择最佳移动（带随机性）
+        best_moves = []
+        for move in moves:
+            try:
+                score = self.evaluator.evaluate_position(board, move[0], move[1], player)
+                best_moves.append((score, move))
+            except:
+                best_moves.append((0, move))
+        
+        best_moves.sort(reverse=True, key=lambda x: x[0])
+        
+        # 在前3个最佳移动中随机选择
+        top_moves = [move for _, move in best_moves[:3]]
+        return random.choice(top_moves) if top_moves else random.choice(moves)
+    
     def _is_near_stones(self, board, row, col, radius=2):
         """检查是否在棋子附近"""
         for i in range(max(0, row-radius), min(15, row+radius+1)):
@@ -820,8 +632,8 @@ class HighQualityMCTSEngine:
                 except:
                     ucb_score = 0
                 
-                # 综合评分（更重视胜率，因为防守型AI需要稳定）
-                composite_score = win_rate * 0.7 + visit_score * 0.2 + ucb_score * 0.1
+                # 综合评分
+                composite_score = win_rate * 0.6 + visit_score * 0.3 + ucb_score * 0.1
                 scored_children.append((composite_score, child))
         
         if scored_children:
@@ -891,7 +703,7 @@ class HighQualityMCTSEngine:
         return None
 
 class MCTSAIPlayer(GomokuAI):
-    """基于高质量MCTS算法的AI玩家 - 防守倾向版"""
+    """基于高质量MCTS算法的AI玩家"""
     
     def __init__(self, iterations=3000, max_time=8.0, c_param=1.414):
         self.thinking = False
@@ -935,7 +747,7 @@ class MCTSAIPlayer(GomokuAI):
         """获取AI的下一步移动"""
         self.thinking = True
         try:
-            print("防守型MCTS AI开始思考...")
+            print("高质量MCTS AI开始思考...")
             
             # 转换棋盘表示
             converted_board = self.convert_board(board, player_side)
@@ -951,14 +763,14 @@ class MCTSAIPlayer(GomokuAI):
             # 确定玩家标识
             player = 1 if player_side == PLAYER_BLACK else -1
             
-            # 执行防守型MCTS搜索
+            # 执行高质量MCTS搜索
             row, col = self.engine.get_next_move(converted_board, player)
             
-            print(f"防守型MCTS AI计算结果: ({row}, {col})")
+            print(f"高质量MCTS AI计算结果: ({row}, {col})")
             return row, col
             
         except Exception as e:
-            print(f"防守型MCTS AI计算出错: {e}")
+            print(f"高质量MCTS AI计算出错: {e}")
             import traceback
             traceback.print_exc()
             return self._get_fallback_move(board, board_size)

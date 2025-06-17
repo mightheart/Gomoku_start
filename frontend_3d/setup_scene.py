@@ -99,7 +99,7 @@ class SceneSetup:
 
     def _check_anim_completion(self, task):
         """检查动画完成"""
-        if not hasattr(self, 'leidian_model') or self.leidian_model.isEmpty():
+        if not hasattr(self, 'leidian_model') or self.leidian_model is None or self.leidian_model.isEmpty():
             return task.done
         if not self.leidian_anims:
             return task.done

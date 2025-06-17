@@ -215,14 +215,15 @@ class CSGOCameraDemo:
             self.scene_setup.cleanup()
         if hasattr(self, "board_setup"):
             self.board_setup.cleanup()
-        if hasattr(self, "wall_nodes"):
-            for node in self.wall_nodes:
-                node.removeNode()
-            self.wall_nodes.clear()
+        if hasattr(self, "board_setup_2"):
+            self.board_setup_2.cleanup()
+        if hasattr(self, "board_setup_3"):
+            self.board_setup_3.cleanup()
+
         # 清理音乐
         if hasattr(self, "audio_manager"):
             self.audio_manager.stop_all_music()
-        # 重置欢迎语音标记（重新进入CSGO模式时可以再次播放）
+        # 重置欢迎语音标记
         self._welcome_voice_played = False
 
     def restore_camera(self, pos, hpr):

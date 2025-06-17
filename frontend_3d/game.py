@@ -33,10 +33,12 @@ class Gomoku_Start(ShowBase):
             if not attr.startswith('_'):
                 setattr(self, attr, getattr(base, attr))
         
-        # 存储AI类型和棋盘位置
+        # 存储AI类型、棋盘位置和默认对手模型
         self.ai_type = ai_type
         self.board_y = board_y
-        
+        self.opponent_model_path = "models/Raiden shogun.glb"
+        self.opponent_model_position=OPPONENT_MODEL_POSITION
+
         #鼠标光标重新显示
         props = WindowProperties()
         props.setCursorHidden(False)
@@ -56,15 +58,18 @@ class Gomoku_Start(ShowBase):
         if ai_type == "classical":
             # 使用经典AI
             self.ai_player = AIPlayer()
-            opponent_model_path = "models/Raiden shogun.glb"
+            self.opponent_model_path = "models/Raiden shogun.glb"
+            self.opponent_model_position=OPPONENT_MODEL_POSITION
         elif ai_type == "minimax":
             # 使用Minimax AI
             self.ai_player = MinimaxAIPlayer()
-            opponent_model_path = "models/lulu.glb"
+            self.opponent_model_path = "models/lulu.glb"
+            self.opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
         elif ai_type == "mcts":
             # 使用MCTS AI
             self.ai_player = MCTSAIPlayer()
-            opponent_model_path = "models/lulu.glb"
+            self.opponent_model_path = "models/lulu.glb"
+            self.opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
 
         # 棋盘数据
         self.squares = [None for _ in range(TOTAL_SQUARES)]
@@ -81,7 +86,7 @@ class Gomoku_Start(ShowBase):
         self.scene_setup.setup_lighting()
         self.scene_setup.load_scene()
 
-        self.board_setup = BoardSetup(self.loader, self.render, opponent_model_path=opponent_model_path)
+        self.board_setup = BoardSetup(self.loader, self.render, opponent_model_path=self.opponent_model_path,opponent_model_position=self.opponent_model_position)
         self.board_setup.setup_board()
         self.squares = self.board_setup.squares
         self.square_root = self.board_setup.square_root
@@ -114,6 +119,7 @@ class Gomoku_Start(ShowBase):
         # 设置引用
         self.mouse_picker.set_board_data(self.squares, self.pieces)
         self.mouse_picker.set_game_instance(self)
+    
     
     def _get_rotation_center_by_ai_type(self, ai_type, board_y):
         """根据AI类型获取旋转中心"""

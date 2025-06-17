@@ -69,8 +69,8 @@ class CSGOCameraDemo:
         self.board_setup_3 = BoardSetup(
             self.loader,
             self.render,
-            opponent_model_path="models/lulu.glb",
-            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
+            opponent_model_path="models/pikaqiu.glb",
+            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], -5)
             )
         self.board_setup_3.setup_board()
         self.board_setup_3.square_root.setY(-200)

@@ -60,7 +60,7 @@ class SceneSetup:
             print(f"地面模型加载失败: {e}")
 
         # 角色模型
-        #self._load_character_models()
+        self._load_character_models()
 
         # 星空
         self.load_space()
@@ -68,25 +68,34 @@ class SceneSetup:
     def _load_character_models(self):
         """加载角色模型"""
         try:
-            self.leidian_model = Actor("models/yae-miko_genshin-impact.bam")
+            self.leidian_model = Actor("models/pikaqiu.glb")
             self.leidian_model.reparentTo(self.render)
-            self.leidian_model.setPos(-15, 20, -10)
+            self.leidian_model.setPos(-35, 30, -3)  
             self.leidian_model.setScale(15)
             self.leidian_anims = self.leidian_model.getAnimNames()
             self.current_anim_index = 0
             if self.leidian_anims:
                 self.leidian_model.play(self.leidian_anims[self.current_anim_index])
                 self.taskMgr.add(self._check_anim_completion, "checkAnimCompletion")
-        except Exception as e:
-            print(f"雷电将军模型加载失败: {e}")
+    
+            # 移动和转向动画，所有z都为-4
+            from direct.interval.IntervalGlobal import Sequence, LerpPosInterval, LerpHprInterval, Wait
 
-        try:
-            self.yaoyao_model = self.loader.loadModel("models/Yaoyao - Genshin Impact.bam")
-            self.yaoyao_model.reparentTo(self.render)
-            self.yaoyao_model.setPos(-15, -20, -10)
-            self.yaoyao_model.setScale(15)
+            seq = Sequence(
+                LerpPosInterval(self.leidian_model, 8.0, (-35, -240, -3)),
+                LerpHprInterval(self.leidian_model, 1.0, (90, 0, 0)),
+                LerpPosInterval(self.leidian_model, 8.0, (35, -240, -3)),
+                LerpHprInterval(self.leidian_model, 1.0, (180, 0, 0)),
+                LerpPosInterval(self.leidian_model, 8.0, (35, 30, -3)),
+                LerpHprInterval(self.leidian_model, 1.0, (270, 0, 0)),
+                LerpPosInterval(self.leidian_model, 8.0, (-35, 30, -3)),
+                LerpHprInterval(self.leidian_model, 1.0, (0, 0, 0)),
+                Wait(1.0)
+            )
+            seq.loop()
         except Exception as e:
-            print(f"瑶瑶模型加载失败: {e}")
+            print(f"皮卡丘模型加载失败: {e}")
+
 
     def _check_anim_completion(self, task):
         """检查动画完成"""

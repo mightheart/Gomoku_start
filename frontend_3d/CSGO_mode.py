@@ -50,7 +50,7 @@ class CSGOCameraDemo:
         self.board_setup = BoardSetup(
             self.loader, 
             self.render,
-            opponent_model_path="models/Raiden shogun.glb"
+            opponent_model_path="models/Raiden shogun.bam"
             )
         self.board_setup.setup_board()
         self.board_setup.square_root.setY(0)
@@ -59,7 +59,7 @@ class CSGOCameraDemo:
         self.board_setup_2 = BoardSetup(
             self.loader, 
             self.render,
-            opponent_model_path="models/lulu.glb",
+            opponent_model_path="models/lulu.bam",
             opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
             )
         self.board_setup_2.setup_board()
@@ -69,7 +69,7 @@ class CSGOCameraDemo:
         self.board_setup_3 = BoardSetup(
             self.loader,
             self.render,
-            opponent_model_path="models/pikaqiu.glb",
+            opponent_model_path="models/pikaqiu.bam",
             opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], -5)
             )
         self.board_setup_3.setup_board()

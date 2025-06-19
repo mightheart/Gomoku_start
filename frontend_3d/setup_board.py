@@ -9,7 +9,7 @@ from utils.constants import (
 from utils.helpers import square_pos, square_color
 
 class BoardSetup:
-    def __init__(self, loader, render, opponent_model_path="models/Raiden shogun.glb",opponent_model_position=OPPONENT_MODEL_POSITION):
+    def __init__(self, loader, render, opponent_model_path="models/Raiden shogun.bam",opponent_model_position=OPPONENT_MODEL_POSITION):
         self.loader = loader
         self.render = render
         self.opponent_model_path = opponent_model_path

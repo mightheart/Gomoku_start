@@ -1,0 +1,2 @@
+moldels/lulu.bam filter=lfs diff=lfs merge=lfs -text
+models/lulu.bam filter=lfs diff=lfs merge=lfs -text

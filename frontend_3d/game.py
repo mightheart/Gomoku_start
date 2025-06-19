@@ -198,10 +198,32 @@ class Gomoku_Start(ShowBase):
         if self.side_selection_frame:
             self.side_selection_frame.destroy()
             self.side_selection_frame = None
-        
+
         # 初始化游戏
         self._init_game()
-        
+
+        # 棋盒切换：如果玩家选黑棋，把黑棋盒和白棋盒位置对调
+        if player_side == PLAYER_BLACK and hasattr(self, "board_setup"):
+            # 交换棋盒和装饰的位置
+            black_box = self.board_setup.black_box
+            white_box = self.board_setup.white_box
+            deco_black = self.board_setup.deco_black
+            deco_white = self.board_setup.deco_white
+
+            # 保存原始位置
+            black_box_pos = black_box.getPos()
+            white_box_pos = white_box.getPos()
+            # 交换棋盒位置
+            black_box.setPos(white_box_pos)
+            white_box.setPos(black_box_pos)
+
+            # 交换装饰位置（如果有）
+            if deco_black and deco_white:
+                deco_black_pos = deco_black.getPos()
+                deco_white_pos = deco_white.getPos()
+                deco_black.setPos(deco_white_pos)
+                deco_white.setPos(deco_black_pos)
+
         # 如果AI先手，延迟让AI下棋
         if self.current_player == self.ai_side:
             print("AI先手，准备AI移动")

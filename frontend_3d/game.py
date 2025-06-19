@@ -5,6 +5,7 @@ import time
 import copy
 import builtins
 import random
+import threading
 from direct.showbase.ShowBase import ShowBase
 from direct.gui.DirectGui import *
 from panda3d.core import WindowProperties, TextNode
@@ -336,7 +337,7 @@ class Gomoku_Start(ShowBase):
     
     def _delayed_ai_move(self, task):
         """延迟AI移动"""
-        self.do_ai_move()
+        threading.Thread(target=self.do_ai_move).start()
         return task.done
     
     # 其他游戏逻辑方法保持不变...

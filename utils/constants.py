@@ -45,13 +45,13 @@ PIECE_EMPTY = ' '
 # 摄像机控制常量
 CAMERA_INITIAL_POSITION = (0, -16.5, 11)  # 初始摄像机位置
 CAMERA_INITIAL_ANGLES = (0, -35, 0)     # 初始摄像机角度 (Roll-Pitch-Yaw)
-CAMERA_ROTATION_SPEED = 30              # 视角旋转速度(度/秒)
+CAMERA_ROTATION_SPEED = 40              # 视角旋转速度(度/秒)
 CAMERA_MAX_PITCH = -15                  # 最大俯仰角
 CAMERA_MIN_PITCH = -52                  # 最小俯仰角
 
 # 摄像机加速度控制常量
-CAMERA_ACCELERATION = 2000.0             # 加速度系数（度/秒²）
-CAMERA_MAX_SPEED_MULTIPLIER = 10000.0       # 最大速度倍数
+CAMERA_ACCELERATION = 60.0             # 加速度系数（度/秒²）
+CAMERA_MAX_SPEED_MULTIPLIER = 5.0       # 最大速度倍数
 CAMERA_ACCELERATION_DELAY = 0.1      # 开始加速前的延迟时间（秒）
 
 # 棋盘常量

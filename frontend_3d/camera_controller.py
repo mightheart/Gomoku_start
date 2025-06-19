@@ -73,6 +73,7 @@ class CameraController:
         """更新摄像机位置(每帧调用)"""
         camera = builtins.camera
         
+        # 水平旋转（左右）
         if self.key_map["cam-left"]:
             speed = self._get_current_speed("cam-left")
             self._rotate_horizontal(dt, -speed, camera)
@@ -80,14 +81,15 @@ class CameraController:
         if self.key_map["cam-right"]:
             speed = self._get_current_speed("cam-right")
             self._rotate_horizontal(dt, speed, camera)
-            
+        
+        vertical_speed = 0
         if self.key_map["cam-up"]:
-            speed = self._get_current_speed("cam-up")
-            self._rotate_vertical(dt, -speed, camera)
-            
+            vertical_speed -= self._get_current_speed("cam-up")
         if self.key_map["cam-down"]:
-            speed = self._get_current_speed("cam-down")
-            self._rotate_vertical(dt, speed, camera)
+            vertical_speed += self._get_current_speed("cam-down")
+            
+        if vertical_speed != 0:
+            self._rotate_vertical(dt, vertical_speed, camera)
     
     def _rotate_horizontal(self, dt, speed, camera):
         """水平旋转摄像机"""
@@ -108,6 +110,12 @@ class CameraController:
         
         h += speed * dt
         
+        # 处理角度循环（-180到180度）
+        if h > 180:
+            h -= 360
+        elif h < -180:
+            h += 360
+        
         # 计算新的相对位置
         new_rel_x = horizontal_radius * math.sin(math.radians(h))
         new_rel_y = -horizontal_radius * math.cos(math.radians(h))
@@ -121,14 +129,16 @@ class CameraController:
         camera.setH(h)
 
     def _rotate_vertical(self, dt, speed, camera):
-        """垂直旋转摄像机"""
         pos = camera.getPos()
         p = camera.getP()
         
         # 计算新的俯仰角
         new_p = p + speed * dt
         
-        # 如果角度没有实际变化，直接返回
+        # 简单限制角度范围
+        new_p = max(CAMERA_MIN_PITCH, min(CAMERA_MAX_PITCH, new_p))
+        
+        # 如果角度没有变化，直接返回
         if abs(new_p - p) < 0.001:
             return
         

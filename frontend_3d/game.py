@@ -423,7 +423,7 @@ class Gomoku_Start(ShowBase):
         
         # 重置游戏状态
         self.chessboard = ChessBoard(size=BOARD_SIZE)
-        self.current_player = PLAYER_WHITE
+        self.current_player = self.player_side
         self.game_over = False
         self.white_pieces_count = MAX_PIECES_PER_PLAYER
         self.black_pieces_count = MAX_PIECES_PER_PLAYER

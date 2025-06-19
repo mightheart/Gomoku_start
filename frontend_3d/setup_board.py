@@ -2,14 +2,14 @@ from panda3d.core import BitMask32, LineSegs
 from utils.constants import (
     BOARD_SIZE, TOTAL_SQUARES, SQUARE_SCALE, WHITE_BOX_POS, BLACK_BOX_POS, BOX_SIZE,
     DECORATION_POSITION_OFFSET, DECORATION_SCALE_X, DECORATION_SCALE_Y, DECORATION_SCALE_Z, DECORATION_ROTATION,
-    WHITE_3D, PIECEBLACK,
+    WHITE_3D, PIECEBLACK,OPPONENT_MODEL_POSITION_RAIDEN,
     THICKNESS_POSITION_OFFSET, THICKNESS_SCALE,
-    OPPONENT_MODEL_POSITION, OPPONENT_MODEL_SCALE, OPPONENT_MODEL_ROTATION
+    OPPONENT_MODEL_SCALE, OPPONENT_MODEL_ROTATION
 )
 from utils.helpers import square_pos, square_color
 
 class BoardSetup:
-    def __init__(self, loader, render, opponent_model_path="models/Raiden shogun.bam",opponent_model_position=OPPONENT_MODEL_POSITION):
+    def __init__(self, loader, render, opponent_model_path="models/Raiden shogun.bam", opponent_model_position=OPPONENT_MODEL_POSITION_RAIDEN):
         self.loader = loader
         self.render = render
         self.opponent_model_path = opponent_model_path
@@ -136,22 +136,3 @@ class BoardSetup:
         if self.square_root:
             self.square_root.removeNode()
             self.square_root = None
-        # 如果棋盒和装饰单独挂在render下，也要清理
-        if hasattr(self, "white_box") and self.white_box:
-            self.white_box.removeNode()
-            self.white_box = None
-        if hasattr(self, "black_box") and self.black_box:
-            self.black_box.removeNode()
-            self.black_box = None
-        if hasattr(self, "deco_white") and self.deco_white:
-            self.deco_white.removeNode()
-            self.deco_white = None
-        if hasattr(self, "deco_black") and self.deco_black:
-            self.deco_black.removeNode()
-            self.deco_black = None
-        if hasattr(self, "thickness_model") and self.thickness_model:
-            self.thickness_model.removeNode()
-            self.thickness_model = None
-        if hasattr(self, "opponent_model") and self.opponent_model:
-            self.opponent_model.removeNode()
-            self.opponent_model = None

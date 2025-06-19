@@ -256,6 +256,7 @@ class SceneSetup:
             self.ground_model.removeNode()
             self.ground_model = None
         if self.leidian_model:
+            self.leidian_model.cleanup()         # 先清理动画资源
             self.leidian_model.removeNode()
             self.leidian_model = None
         if self.yaoyao_model:

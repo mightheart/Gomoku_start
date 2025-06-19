@@ -28,7 +28,7 @@ from Gomoku_ai_MCTS.ai import MCTSAIPlayer
 class Gomoku_Start(ShowBase):
     """五子棋游戏主类 - 重构版本"""
     
-    def __init__(self, base, ai_type="classical", board_y=0, opponent_model_position=None):
+    def __init__(self, base, ai_type="classical", board_y=0, opponent_model_path=None, opponent_model_position=None):
         self.base = base
         for attr in dir(base):
             if not attr.startswith('_'):
@@ -37,12 +37,8 @@ class Gomoku_Start(ShowBase):
         # 存储AI类型、棋盘位置和默认对手模型
         self.ai_type = ai_type
         self.board_y = board_y
-        self.opponent_model_path = "models/Raiden shogun.bam"
-        # 优先用外部传入的位置
-        if opponent_model_position is not None:
-            self.opponent_model_position = opponent_model_position
-        else:
-            self.opponent_model_position = (0, -8, 0)
+        self.opponent_model_path = opponent_model_path
+        self.opponent_model_position = opponent_model_position
 
         # 鼠标光标重新显示
         props = WindowProperties()
@@ -79,16 +75,12 @@ class Gomoku_Start(ShowBase):
     def _create_ai_player(self):
         if self.ai_type == "classical":
             self.ai_player = AIPlayer()
-            self.opponent_model_path = "models/Raiden shogun.bam"
         elif self.ai_type == "minimax":
             self.ai_player = MinimaxAIPlayer()
-            self.opponent_model_path = "models/lulu.bam"
         elif self.ai_type == "mcts":
             self.ai_player = MCTSAIPlayer()
-            self.opponent_model_path = "models/pikaqiu.bam"
         else:
             self.ai_player = AIPlayer()
-            self.opponent_model_path = "models/Raiden shogun.bam"
     
     def _show_side_selection(self):
         """显示先后手选择界面"""

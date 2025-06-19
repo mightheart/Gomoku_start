@@ -6,7 +6,11 @@ from frontend_3d.setup_scene import SceneSetup
 from frontend_3d.setup_board import BoardSetup
 from frontend_3d.audio_manager import AudioManager
 import sys
-from utils.constants import OPPONENT_MODEL_POSITION
+from utils.constants import (
+    OPPONENT_MODEL_PATH_RAIDEN, OPPONENT_MODEL_PATH_LULU, OPPONENT_MODEL_PATH_PIKA,
+    OPPONENT_MODEL_POSITION_RAIDEN, OPPONENT_MODEL_POSITION_LULU, OPPONENT_MODEL_POSITION_PIKA
+)
+
 class CSGOCameraDemo:
     def __init__(self, base):
         self.base = base
@@ -46,32 +50,33 @@ class CSGOCameraDemo:
         self.ground = self.scene_setup.ground_model
 
     def _init_board(self):
-        # 第一个棋盘
+        # 第一个棋盘（classical AI）
         self.board_setup = BoardSetup(
-            self.loader, 
+            self.loader,
             self.render,
-            opponent_model_path="models/Raiden shogun.bam"
-            )
+            opponent_model_path=OPPONENT_MODEL_PATH_RAIDEN,
+            opponent_model_position=OPPONENT_MODEL_POSITION_RAIDEN
+        )
         self.board_setup.setup_board()
         self.board_setup.square_root.setY(0)
 
-        # 第二个棋盘
+        # 第二个棋盘（minimax AI）
         self.board_setup_2 = BoardSetup(
-            self.loader, 
+            self.loader,
             self.render,
-            opponent_model_path="models/lulu.bam",
-            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
-            )
+            opponent_model_path=OPPONENT_MODEL_PATH_LULU,
+            opponent_model_position=OPPONENT_MODEL_POSITION_LULU
+        )
         self.board_setup_2.setup_board()
         self.board_setup_2.square_root.setY(-100)
 
-        # 第三个棋盘
+        # 第三个棋盘（MCTS AI）
         self.board_setup_3 = BoardSetup(
             self.loader,
             self.render,
-            opponent_model_path="models/pikaqiu.bam",
-            opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], -5)
-            )
+            opponent_model_path=OPPONENT_MODEL_PATH_PIKA,
+            opponent_model_position=OPPONENT_MODEL_POSITION_PIKA
+        )
         self.board_setup_3.setup_board()
         self.board_setup_3.square_root.setY(-200)
 
@@ -193,20 +198,40 @@ class CSGOCameraDemo:
         return Task.cont
 
     def _start_gomoku(self, board_id=1):
-        # 获取当前棋盘的对手模型位置
+        # 集中管理参数
         if board_id == 1:
-            opponent_model_position = (0, 15, 0)
+            ai_type = "classical"
+            board_y = 0
+            opponent_model_path = OPPONENT_MODEL_PATH_RAIDEN
+            opponent_model_position = OPPONENT_MODEL_POSITION_RAIDEN
         elif board_id == 2:
-            opponent_model_position = (0, 15, 5)
+            ai_type = "minimax"
+            board_y = -100
+            opponent_model_path = OPPONENT_MODEL_PATH_LULU
+            opponent_model_position = OPPONENT_MODEL_POSITION_LULU
         elif board_id == 3:
-            opponent_model_position = (0, 15, -5)
+            ai_type = "mcts"
+            board_y = -200
+            opponent_model_path = OPPONENT_MODEL_PATH_PIKA
+            opponent_model_position = OPPONENT_MODEL_POSITION_PIKA
         else:
-            opponent_model_position = (0, 15, 0)
-        # 通知主程序切换到Gomoku模式，并传递位置
+            ai_type = "classical"
+            board_y = 0
+            opponent_model_path = OPPONENT_MODEL_PATH_RAIDEN
+            opponent_model_position = OPPONENT_MODEL_POSITION_RAIDEN
+
+        # 通知主程序切换到Gomoku模式，并传递所有参数
         if hasattr(self.base, "messenger"):
             self.base.messenger.send(
                 "start-gomoku",
-                [self.base.camera.getPos(), self.base.camera.getHpr(), board_id, opponent_model_position]
+                [
+                    self.base.camera.getPos(),
+                    self.base.camera.getHpr(),
+                    ai_type,
+                    board_y,
+                    opponent_model_path,
+                    opponent_model_position
+                ]
             )
 
     def _play_welcome_voice(self):

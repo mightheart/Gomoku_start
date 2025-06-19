@@ -20,7 +20,7 @@ class MainApp(ShowBase):
         self.accept("start-gomoku", self.start_gomoku)
         self.accept("back-to-csgo", self.back_to_csgo)
 
-    def start_gomoku(self, camera_pos, camera_hpr, board_id=1, opponent_model_position=(0, -8, 0)):
+    def start_gomoku(self, camera_pos, camera_hpr, ai_type="classical", board_y=0, opponent_model_path=None, opponent_model_position=None):
         self.last_camera_pos = camera_pos
         self.last_camera_hpr = camera_hpr
         if self.gomoku_mode:
@@ -29,13 +29,14 @@ class MainApp(ShowBase):
         if self.csgo_mode:
             self.csgo_mode.cleanup()
             self.csgo_mode = None
-        # 进入不同棋盘，传递不同参数
-        if board_id == 1:
-            self.gomoku_mode = Gomoku_Start(self, ai_type="classical", board_y=0, opponent_model_position=opponent_model_position)
-        elif board_id == 2:
-            self.gomoku_mode = Gomoku_Start(self, ai_type="minimax", board_y=-100, opponent_model_position=opponent_model_position)
-        elif board_id == 3:
-            self.gomoku_mode = Gomoku_Start(self, ai_type="mcts", board_y=-200, opponent_model_position=opponent_model_position)
+
+        self.gomoku_mode = Gomoku_Start(
+            self,
+            ai_type=ai_type,
+            board_y=board_y,
+            opponent_model_path=opponent_model_path,
+            opponent_model_position=opponent_model_position
+        )
         self.mode = "gomoku"
 
     def back_to_csgo(self):

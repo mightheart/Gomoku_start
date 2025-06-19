@@ -24,7 +24,7 @@ from Gomoku_ai_classical.ai import AIPlayer
 from .setup_scene import SceneSetup
 from .setup_board import BoardSetup
 from Gomoku_ai_minimax.ai import MinimaxAIPlayer
-from Gomoku_ai_MCTS.ai import MCTSAIPlayer
+from Gomoku_ai_MCTS.aiv3 import MCTSAIPlayer
 
 class Gomoku_Start(ShowBase):
     """五子棋游戏主类 - 重构版本"""

@@ -68,7 +68,7 @@ class SceneSetup:
     def _load_character_models(self):
         """加载角色模型"""
         try:
-            self.leidian_model = Actor("models/pikaqiu.glb")
+            self.leidian_model = Actor("models/pikaqiu.bam")
             self.leidian_model.reparentTo(self.render)
             self.leidian_model.setPos(-35, 30, -3)  
             self.leidian_model.setScale(15)

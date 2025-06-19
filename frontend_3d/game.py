@@ -36,7 +36,7 @@ class Gomoku_Start(ShowBase):
         # 存储AI类型、棋盘位置和默认对手模型
         self.ai_type = ai_type
         self.board_y = board_y
-        self.opponent_model_path = "models/Raiden shogun.glb"
+        self.opponent_model_path = "models/Raiden shogun.bam"
         self.opponent_model_position=OPPONENT_MODEL_POSITION
 
         #鼠标光标重新显示
@@ -58,18 +58,18 @@ class Gomoku_Start(ShowBase):
         if ai_type == "classical":
             # 使用经典AI
             self.ai_player = AIPlayer()
-            self.opponent_model_path = "models/Raiden shogun.glb"
+            self.opponent_model_path = "models/Raiden shogun.bam"
             self.opponent_model_position=OPPONENT_MODEL_POSITION
         elif ai_type == "minimax":
             # 使用Minimax AI
             self.ai_player = MinimaxAIPlayer()
-            self.opponent_model_path = "models/lulu.glb"
+            self.opponent_model_path = "models/lulu.bam"
             self.opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
         elif ai_type == "mcts":
             # 使用MCTS AI
             self.ai_player = MCTSAIPlayer()
-            self.opponent_model_path = "models/lulu.glb"
-            self.opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], 5)
+            self.opponent_model_path = "models/pikaqiu.bam"
+            self.opponent_model_position=(OPPONENT_MODEL_POSITION[0], OPPONENT_MODEL_POSITION[1], -5)
 
         # 棋盘数据
         self.squares = [None for _ in range(TOTAL_SQUARES)]

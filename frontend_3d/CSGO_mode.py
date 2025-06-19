@@ -172,13 +172,13 @@ class CSGOCameraDemo:
                 self.in_gomoku_area = True
                 if near_board ==1:
                     self.hint_text = OnscreenText(
-                    f"Press space to enter the Challenging mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    f"Press space to challenge classical AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
                 elif near_board == 2:
                     self.hint_text = OnscreenText(
-                    f"Press space to enter the Easy mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    f"Press space to challenge minimax AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
                 elif near_board == 3:
                     self.hint_text = OnscreenText(
-                    f"Press space to enter the Stupid mode", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    f"Press space to challenge MCTS AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
                 self.base.accept("space", lambda: self._start_gomoku(near_board))
                 if not self._welcome_voice_played:
                     self._play_welcome_voice()

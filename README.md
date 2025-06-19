@@ -72,7 +72,6 @@ python run_3d_safe_mode.py
 ```
 ├── run_2d.py              # 2D版本启动文件
 ├── run_3d.py              # 3D版本启动文件
-├── run_3d_safe_mode.py    # 3D安全模式启动文件
 ├── frontend_2d/           # 2D游戏界面
 │   ├── game.py            # 2D游戏主逻辑
 │   └── ui.py              # 2D界面绘制

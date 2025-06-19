@@ -193,9 +193,21 @@ class CSGOCameraDemo:
         return Task.cont
 
     def _start_gomoku(self, board_id=1):
-        # 通知主程序切换到Gomoku模式
+        # 获取当前棋盘的对手模型位置
+        if board_id == 1:
+            opponent_model_position = (0, 15, 0)
+        elif board_id == 2:
+            opponent_model_position = (0, 15, 5)
+        elif board_id == 3:
+            opponent_model_position = (0, 15, -5)
+        else:
+            opponent_model_position = (0, 15, 0)
+        # 通知主程序切换到Gomoku模式，并传递位置
         if hasattr(self.base, "messenger"):
-            self.base.messenger.send("start-gomoku", [self.base.camera.getPos(), self.base.camera.getHpr(), board_id])
+            self.base.messenger.send(
+                "start-gomoku",
+                [self.base.camera.getPos(), self.base.camera.getHpr(), board_id, opponent_model_position]
+            )
 
     def _play_welcome_voice(self):
         """播放欢迎语音"""

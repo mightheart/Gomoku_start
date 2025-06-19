@@ -126,8 +126,8 @@ class BoardSetup:
         # 对手模型
         self.opponent_model = self.loader.loadModel(self.opponent_model_path)
         if self.opponent_model:
-            self.opponent_model.reparentTo(self.square_root)
-            self.opponent_model.setPos(*self.opponent_model_position)
+            self.opponent_model.reparentTo(self.square_root)  # 挂到棋盘节点下
+            self.opponent_model.setPos(*self.opponent_model_position)  # 这里的坐标是相对棋盘的
             self.opponent_model.setScale(*OPPONENT_MODEL_SCALE)
             self.opponent_model.setHpr(*OPPONENT_MODEL_ROTATION)
 

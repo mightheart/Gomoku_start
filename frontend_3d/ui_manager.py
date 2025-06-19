@@ -124,15 +124,32 @@ class UIManager:
         
         self.function_ui['stats_text'].setText(stats_text)
     
-    def update_current_player(self, current_player, is_ai_enabled, ai_side, game_over):
-        """更新当前玩家显示"""
-        if not self.function_ui['current_player'] or game_over:
+    def update_current_player(self, current_player, is_ai_enabled, ai_side, game_over, player_side=None):
+        """更新当前玩家显示（支持动态先后手）"""
+        if game_over:
             return
         
-        player_name = "Black" if current_player == PLAYER_BLACK else "White"
-        if is_ai_enabled and current_player == ai_side:
-            player_name += " (AI)"
-        self.function_ui['current_player'].setText(f"Current Player: {player_name}")
+        # 确定玩家控制的颜色
+        if player_side:
+            player_color = "Black" if player_side == PLAYER_BLACK else "White" 
+            ai_color = "White" if player_side == PLAYER_BLACK else "Black"
+        else:
+            # 兼容旧版本
+            player_color = "White"
+            ai_color = "Black"
+        
+        if current_player == (player_side if player_side else PLAYER_WHITE):
+            # 玩家回合
+            current_text = f"Your Turn ({player_color})"
+            color = (0, 1, 0, 1)  # 绿色
+        else:
+            # AI回合
+            current_text = f"AI Turn ({ai_color})"  
+            color = (1, 1, 0, 1)  # 黄色
+        
+        if hasattr(self, 'current_player_label'):
+            self.current_player_label['text'] = current_text
+            self.current_player_label['text_fg'] = color
     
     def show_ai_thinking(self):
         """显示AI思考状态"""

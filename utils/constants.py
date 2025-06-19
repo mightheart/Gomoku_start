@@ -46,7 +46,7 @@ PIECE_EMPTY = ' '
 CAMERA_INITIAL_POSITION = (0, -16.5, 11)  # 初始摄像机位置
 CAMERA_INITIAL_ANGLES = (0, -35, 0)     # 初始摄像机角度 (Roll-Pitch-Yaw)
 CAMERA_ROTATION_SPEED = 40              # 视角旋转速度(度/秒)
-CAMERA_MAX_PITCH = -15                  # 最大俯仰角
+CAMERA_MAX_PITCH = 15                  # 最大俯仰角
 CAMERA_MIN_PITCH = -52                  # 最小俯仰角
 
 # 摄像机加速度控制常量
@@ -222,3 +222,11 @@ UI_COLOR_CYAN = (0, 1, 1, 1)
 UI_COLOR_GREEN = (0, 1, 0, 1)
 UI_COLOR_RED = (1, 0, 0, 1)
 UI_COLOR_SHADOW = (0, 0, 0, 1)
+
+# 先后手选择相关常量
+SIDE_SELECTION_BG_COLOR = (0, 0, 0, 0.8)
+SIDE_SELECTION_BUTTON_NORMAL = (0.5, 0.5, 0.5, 0.9)
+SIDE_SELECTION_BUTTON_HOVER = (0.6, 0.6, 0.6, 0.9)
+
+# 五子棋规则常量
+TRADITIONAL_FIRST_PLAYER = PLAYER_BLACK  # 传统规则黑棋先手

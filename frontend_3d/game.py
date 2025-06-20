@@ -325,7 +325,14 @@ class Gomoku_Start(ShowBase):
         self.camera_controller.update(dt)
         
         if not self.game_over:
-            self.statistics.update_player_time(self.current_player, self.game_over)
+            # 传递is_ai_enabled和ai_side参数给update_player_time
+            self.statistics.update_player_time(
+                self.current_player, 
+                game_over=self.game_over,
+                is_ai_enabled=self.is_ai_enabled,
+                ai_side=self.ai_side
+            )
+            
             game_data = self.statistics.get_game_data()
             self.ui_manager.update_statistics(game_data)
             
@@ -347,13 +354,13 @@ class Gomoku_Start(ShowBase):
         old_player = self.current_player
         new_player = PLAYER_WHITE if self.current_player == PLAYER_BLACK else PLAYER_BLACK
         
-        # 先通知统计管理器切换（处理时间统计和AI语音）
+        # 更新当前玩家
+        self.current_player = new_player
+        print(f"游戏切换玩家: {old_player} -> {new_player}")
+        
+        # 通知统计管理器（只处理AI语音，不处理时间）
         if hasattr(self, 'statistics'):
             self.statistics.switch_player(new_player)
-        
-        # 然后更新当前玩家
-        self.current_player = new_player
-        print(f"切换玩家: {old_player} -> {new_player}")
     
     def update_gomoku_state(self, last_pos):
         """更新游戏状态"""
@@ -373,6 +380,7 @@ class Gomoku_Start(ShowBase):
         else:
             self.black_pieces_count -= 1
         
+        # 记录移动（不累加时间）
         self.statistics.add_move(row, col, self.current_player)
         self.audio_manager.play_place_piece_sound()
         
@@ -381,7 +389,8 @@ class Gomoku_Start(ShowBase):
         if self._handle_game_over():
             return
         
-        self.switch_player()  # 这里只负责切换，不减少棋子
+        # 切换玩家
+        self.switch_player()
         
         # 检查是否轮到AI
         if self.is_ai_enabled and self.current_player == self.ai_side:
@@ -403,7 +412,7 @@ class Gomoku_Start(ShowBase):
         else:
             self.black_pieces_count -= 1
         
-        # 找到AI下的位置
+        # 找到AI下的位置并记录移动（不累加时间）
         for i in range(BOARD_SIZE):
             for j in range(BOARD_SIZE):
                 if old_chessboard.board[i][j] != self.chessboard.board[i][j]:
@@ -417,6 +426,7 @@ class Gomoku_Start(ShowBase):
         if self._handle_game_over():
             return
         
+        # 切换玩家
         self.switch_player()
     
     def restart_game(self):

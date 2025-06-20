@@ -38,78 +38,75 @@ class GameStatistics:
     def _play_voice(self, voice_type, volume=1):
         """播放语音并更新冷却时间"""
         if self.audio_manager and self._can_play_voice():
-            self.audio_manager.play_ai_voice(voice_type, volume=volume)
-            self._last_voice_time = time.time()
-            return True
-        return False
+            # 使用新的统一接口
+            result = self.audio_manager.play_ai_voice(voice_type, volume=volume)
+            if result:  # 只有播放成功才更新冷却时间
+                self._last_voice_time = time.time()
+                print(f"播放语音: {voice_type}")
+            else:
+                print(f"播放语音失败: {voice_type}")
+            return result
+        else:
+            print(f"语音冷却中，跳过播放: {voice_type}")
+            return False
 
 
-
-    def update_player_time(self, current_player, game_over=False):
+    def update_player_time(self, current_player, game_over=False, is_ai_enabled=False, ai_side=None):
         """更新当前玩家用时"""
         if game_over:
             return
         
         current_time = time.time()
         
-        # 玩家切换
+        # 玩家切换逻辑
         if self.last_player != current_player:
             print(f"玩家切换: {self.last_player} -> {current_player}")
             
-            # 先累加上一个玩家的用时
+            # 先累加上一个玩家的用时（只在这里累加一次）
             if self.last_player is not None:
                 time_spent = current_time - self.current_player_start_time
                 if self.last_player == PLAYER_BLACK:
                     self.player_black_total_time += time_spent
+                    print(f"黑棋累加时间: {time_spent:.1f}秒，总时间: {self.player_black_total_time:.1f}秒")
                 else:
                     self.player_white_total_time += time_spent
+                    print(f"白棋累加时间: {time_spent:.1f}秒，总时间: {self.player_white_total_time:.1f}秒")
             
             # 重置新玩家的计时
             self.current_player_start_time = current_time
             self.last_player = current_player
             
-            # 重置催促语音标记
-            self._催促_25s_played = False
-            self._催促_60s_played = False
+            # 判断是否切换到人类玩家，如果是则重置催促标记
+            is_human_turn = not is_ai_enabled or current_player != ai_side
+            if is_human_turn:
+                self._催促_25s_played = False
+                self._催促_60s_played = False
+                print(f"切换到人类玩家，重置催促语音标记")
         
-        # 催促语音逻辑 - 只在玩家回合触发
-        if current_player == PLAYER_WHITE:
+        # 催促语音逻辑 - 只在人类玩家回合触发
+        is_human_turn = not is_ai_enabled or current_player != ai_side
+        
+        if is_human_turn:
             time_spent = current_time - self.current_player_start_time
             
-            # 25秒催促（只播放一次，且遵循冷却）
+            # 25秒催促
             if time_spent >= 25 and not self._催促_25s_played:
-                if self._play_voice("催促"):
-                    print(f"玩家已思考{time_spent:.1f}秒，播放25秒催促语音")
+                if self._play_voice("催促", volume=1):
+                    print(f"播放25秒催促语音成功")
                     self._催促_25s_played = True
             
-            # 60秒催促（只播放一次，且遵循冷却）
+            # 60秒催促
             elif time_spent >= 60 and not self._催促_60s_played:
-                if self._play_voice("催促"):
-                    print(f"玩家已思考{time_spent:.1f}秒，播放60秒催促语音")
+                if self._play_voice("催促", volume=1):
+                    print(f"播放60秒催促语音成功")
                     self._催促_60s_played = True
     
     def switch_player(self, new_player):
-        """切换玩家 - AI回合开始时的思考语音"""
-        current_time = time.time()
-        
-        # 累加当前玩家的用时
-        if self.last_player is not None:
-            time_spent = current_time - self.current_player_start_time
-            if self.last_player == PLAYER_BLACK:
-                self.player_black_total_time += time_spent
-            else:
-                self.player_white_total_time += time_spent
-        
-        # 更新玩家信息
-        self.current_player_start_time = current_time
-        self.last_player = new_player
-        
-        # 重置催促语音标记
-        self._催促_25s_played = False
-        self._催促_60s_played = False
+        """切换玩家 - 只处理AI思考语音，不处理时间统计"""
+        print(f"switch_player被调用: 切换到 {new_player}")
         
         # AI思考语音逻辑 - AI回合开始时触发
-        if (new_player == PLAYER_BLACK and  # AI是黑棋
+        if (new_player == PLAYER_BLACK and  # 假设AI是黑棋时触发
             self.move_count > 18 and        # 总回合大于18
             random.random() < 0.3):         # 30%概率触发
 
@@ -117,21 +114,12 @@ class GameStatistics:
                 print(f"AI回合开始，播放思考语音（总回合：{self.move_count}）")
     
     def add_move(self, row, col, player):
-        """添加移动记录"""
-        current_time = time.time()
-        
-        # 累加当前玩家的用时
-        time_spent = current_time - self.current_player_start_time
-        if player == PLAYER_BLACK:
-            self.player_black_total_time += time_spent
-        else:
-            self.player_white_total_time += time_spent
-        
+        """添加移动记录 - 不处理时间统计"""
         # 添加移动记录
         self.move_history.append((row, col, player))
         self.move_count += 1
         
-        print(f"添加移动: ({row}, {col}), 玩家: {player}")
+        print(f"添加移动: ({row}, {col}), 玩家: {player}，总步数: {self.move_count}")
     
     def undo_moves(self, steps_to_undo):
         """撤销移动"""

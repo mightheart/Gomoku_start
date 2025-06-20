@@ -70,7 +70,7 @@ class SceneSetup:
         try:
             self.leidian_model = Actor("models/pikaqiu.bam")
             self.leidian_model.reparentTo(self.render)
-            self.leidian_model.setPos(-35, 30, -3)  
+            self.leidian_model.setPos(-50, 30, -3)  
             self.leidian_model.setScale(15)
             self.leidian_anims = self.leidian_model.getAnimNames()
             self.current_anim_index = 0
@@ -82,13 +82,13 @@ class SceneSetup:
             from direct.interval.IntervalGlobal import Sequence, LerpPosInterval, LerpHprInterval, Wait
 
             seq = Sequence(
-                LerpPosInterval(self.leidian_model, 8.0, (-35, -240, -3)),
+                LerpPosInterval(self.leidian_model, 8.0, (-50, -200, -3)),
                 LerpHprInterval(self.leidian_model, 1.0, (90, 0, 0)),
-                LerpPosInterval(self.leidian_model, 8.0, (35, -240, -3)),
+                LerpPosInterval(self.leidian_model, 8.0, (50, -200, -3)),
                 LerpHprInterval(self.leidian_model, 1.0, (180, 0, 0)),
-                LerpPosInterval(self.leidian_model, 8.0, (35, 30, -3)),
+                LerpPosInterval(self.leidian_model, 8.0, (50, 30, -3)),
                 LerpHprInterval(self.leidian_model, 1.0, (270, 0, 0)),
-                LerpPosInterval(self.leidian_model, 8.0, (-35, 30, -3)),
+                LerpPosInterval(self.leidian_model, 8.0, (-50, 30, -3)),
                 LerpHprInterval(self.leidian_model, 1.0, (0, 0, 0)),
                 Wait(1.0)
             )

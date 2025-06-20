@@ -36,7 +36,7 @@ class CSGOCameraDemo:
 
     def _setup_camera(self):
         self.disableMouse()
-        self.camera.setPos(0, -235, 5)  # 初始坐标
+        self.camera.setPos(0, -100, 10)  # 初始坐标调整，靠近棋盘
         self.pitch = 0
         self.yaw = 0
 
@@ -55,30 +55,30 @@ class CSGOCameraDemo:
             self.loader,
             self.render,
             opponent_model_path=OPPONENT_MODEL_PATH_RAIDEN,
-            opponent_model_position=OPPONENT_MODEL_POSITION_RAIDEN
+            opponent_model_position=Vec3(*OPPONENT_MODEL_POSITION_RAIDEN)
         )
         self.board_setup.setup_board()
-        self.board_setup.square_root.setY(0)
+        self.board_setup.square_root.setX(-30)
 
         # 第二个棋盘（minimax AI）
         self.board_setup_2 = BoardSetup(
             self.loader,
             self.render,
             opponent_model_path=OPPONENT_MODEL_PATH_LULU,
-            opponent_model_position=OPPONENT_MODEL_POSITION_LULU
+            opponent_model_position=Vec3(*OPPONENT_MODEL_POSITION_LULU)
         )
         self.board_setup_2.setup_board()
-        self.board_setup_2.square_root.setY(-100)
+        self.board_setup_2.square_root.setX(0)
 
         # 第三个棋盘（MCTS AI）
         self.board_setup_3 = BoardSetup(
             self.loader,
             self.render,
             opponent_model_path=OPPONENT_MODEL_PATH_PIKA,
-            opponent_model_position=OPPONENT_MODEL_POSITION_PIKA
+            opponent_model_position=Vec3(*OPPONENT_MODEL_POSITION_PIKA)
         )
         self.board_setup_3.setup_board()
-        self.board_setup_3.square_root.setY(-200)
+        self.board_setup_3.square_root.setX(30)
 
     def _init_controls(self):
         self.mouse_sensitivity = 0.05
@@ -158,10 +158,9 @@ class CSGOCameraDemo:
 
     def check_gomoku_area(self, task):
         cam_pos = self.base.camera.getPos()
-        from panda3d.core import Vec3
-        gomoku_center_1 = Vec3(0, 0, 0)
-        gomoku_center_2 = Vec3(0, -100, 0)
-        gomoku_center_3 = Vec3(0, -200, 0)
+        gomoku_center_1 = Vec3(-50, 0, 0)
+        gomoku_center_2 = Vec3(0, 0, 0)
+        gomoku_center_3 = Vec3(50, 0, 0)
         # 棋盘中心点
         radius = 20
         near_board = None
@@ -208,24 +207,24 @@ class CSGOCameraDemo:
         # 集中管理参数
         if board_id == 1:
             ai_type = "classical"
-            board_y = 0
+            board_x = -50
             opponent_model_path = OPPONENT_MODEL_PATH_RAIDEN
-            opponent_model_position = OPPONENT_MODEL_POSITION_RAIDEN
+            opponent_model_position = Vec3(*OPPONENT_MODEL_POSITION_RAIDEN)
         elif board_id == 2:
             ai_type = "minimax"
-            board_y = -100
+            board_x = 0
             opponent_model_path = OPPONENT_MODEL_PATH_LULU
-            opponent_model_position = OPPONENT_MODEL_POSITION_LULU
+            opponent_model_position = Vec3(*OPPONENT_MODEL_POSITION_LULU)
         elif board_id == 3:
             ai_type = "mcts"
-            board_y = -200
+            board_x = 50
             opponent_model_path = OPPONENT_MODEL_PATH_PIKA
-            opponent_model_position = OPPONENT_MODEL_POSITION_PIKA
+            opponent_model_position = Vec3(*OPPONENT_MODEL_POSITION_PIKA)
         else:
             ai_type = "classical"
-            board_y = 0
+            board_x = -50
             opponent_model_path = OPPONENT_MODEL_PATH_RAIDEN
-            opponent_model_position = OPPONENT_MODEL_POSITION_RAIDEN
+            opponent_model_position = Vec3(*OPPONENT_MODEL_POSITION_RAIDEN)
 
         # 通知主程序切换到Gomoku模式，并传递所有参数
         if hasattr(self.base, "messenger"):
@@ -235,7 +234,7 @@ class CSGOCameraDemo:
                     self.base.camera.getPos(),
                     self.base.camera.getHpr(),
                     ai_type,
-                    board_y,
+                    board_x,
                     opponent_model_path,
                     opponent_model_position
                 ]

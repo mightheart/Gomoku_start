@@ -29,6 +29,7 @@ class GameStatistics:
         self._催促_25s_played = False  # 是否已播放25秒催促
         self._催促_60s_played = False  # 是否已播放60秒催促
         self._last_voice_time = 0      # 上次播放语音的时间
+        self._undo_voice_played = []   # 已播放过的悔棋语音索引列表
     
     def _can_play_voice(self):
         """检查是否可以播放语音（5秒冷却）"""
@@ -41,7 +42,9 @@ class GameStatistics:
             self._last_voice_time = time.time()
             return True
         return False
-    
+
+
+
     def update_player_time(self, current_player, game_over=False):
         """更新当前玩家用时"""
         if game_over:
@@ -189,3 +192,70 @@ class GameStatistics:
         stats += f"Undos Used: {self.undo_count} times"
         
         return stats
+    
+    def play_undo_voice(self, ai_type=None):
+        """播放悔棋语音 - 三次悔棋不重复播放"""
+        if not self.audio_manager or not self._can_play_voice():
+            print("悔棋语音被冷却限制，跳过播放")
+            return False
+        
+        # 获取所有包含"悔棋"关键词的语音索引
+        undo_voice_indices = self._get_undo_voice_indices(ai_type)
+        
+        if not undo_voice_indices:
+            print("没有找到悔棋语音")
+            return False
+        
+        # 选择未播放过的语音
+        available_indices = [idx for idx in undo_voice_indices if idx not in self._undo_voice_played]
+        
+        if not available_indices:
+            # 如果所有悔棋语音都播放过了，重置列表（理论上不会发生，因为最多3次悔棋）
+            print("所有悔棋语音都已播放，重置播放记录")
+            self._undo_voice_played = []
+            available_indices = undo_voice_indices
+        
+        # 随机选择一个未播放过的悔棋语音
+        selected_index = random.choice(available_indices)
+        
+        # 直接使用索引播放语音
+        result = self.audio_manager.play_ai_voice(
+            identifier=selected_index,  # 直接传递索引
+            volume=1.0,
+            ai_type=ai_type
+        )
+        
+        if result:
+            # 记录已播放的语音索引
+            self._undo_voice_played.append(selected_index)
+            self._last_voice_time = time.time()
+            print(f"播放悔棋语音 (索引:{selected_index}), 已播放列表: {self._undo_voice_played}")
+            return True
+        else:
+            print("悔棋语音播放失败")
+            return False
+    
+    def _get_undo_voice_indices(self, ai_type=None):
+        """获取所有悔棋语音的索引"""
+        if not self.audio_manager:
+            return []
+        
+        # 确定使用的AI类型和语音包
+        target_ai_type = ai_type if ai_type else self.audio_manager.current_ai_type
+        voice_pack = self.audio_manager.AI_VOICE_MAPPING.get(target_ai_type, "nahita")
+        
+        undo_indices = []
+        
+        if voice_pack == "nahita":
+            # 在Nahita语音中查找包含"悔棋"的语音
+            for keyword, index in self.audio_manager.nahita_voice_map.items():
+                if "悔棋" in keyword:
+                    undo_indices.append(index)
+        elif voice_pack == "tinyun":
+            # 在Tinyun语音中查找包含"悔棋"的语音
+            for keyword, index in self.audio_manager.tinyun_voice_map.items():
+                if "悔棋" in keyword:
+                    undo_indices.append(index)
+        
+        print(f"找到 {len(undo_indices)} 个悔棋语音 ({voice_pack}): {undo_indices}")
+        return undo_indices

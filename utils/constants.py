@@ -164,8 +164,11 @@ NAHITA_VOICE = [
                 "sound/nahita/催促，长蘑菇2.wav",
                 "sound/nahita/催促，长蘑菇3.wav",
                 "sound/nahita/催促，想好下哪了吗.wav",
-                "sound/nahita/催促，不知道干什么的话.......wav"
-               ]
+                "sound/nahita/催促，不知道干什么的话.......wav",
+                "sound/nahita/玩家悔棋，现在改还来得及哦.wav",
+                "sound/nahita/玩家悔棋，我刚刚想到的是一步好棋.wav",
+                "sound/nahita/玩家悔棋，机会要留给有准备的人.wav"
+]
 TINYUN_VOICE = [
                 "sound/tinyun/催促，哎呀～方才是我失言，恩公不要往心里去啦.wav",
                 "sound/tinyun/催促，哎呀都这个时辰了.wav",
@@ -193,6 +196,9 @@ TINYUN_VOICE = [
                 "sound/tinyun/玩家失败，这算是恭维？.wav",
                 "sound/tinyun/玩家失败，小女子不会乱嚼舌根.wav",
                 "sound/tinyun/玩家失败，瞧瞧我的缜密心思.wav",
+                "sound/tinyun/玩家悔棋，下棋可急不得呢.wav",
+                "sound/tinyun/玩家悔棋，停云刚才可是想了好久呢.wav",
+                "sound/tinyun/玩家悔棋，没关系咯.wav"
                 ]
 WINNER_MUSIC = "sound/winner_music.wav"  # 获胜音乐
 LOSER_MUSIC = "sound/nahita/loser_music.wav"  # 失败音乐

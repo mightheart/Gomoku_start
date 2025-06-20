@@ -460,7 +460,11 @@ class Gomoku_Start(ShowBase):
             print("Cannot undo")
             return
         
+        # 播放悔棋音效
         self.audio_manager.play_drag_piece_sound()
+        
+        # 播放悔棋语音 - 传递AI类型
+        self.statistics.play_undo_voice(ai_type=self.ai_type)
         
         steps_to_undo = 2 if self.is_ai_enabled and len(self.statistics.move_history) >= 2 else 1
         undone_moves = self.statistics.undo_moves(steps_to_undo)

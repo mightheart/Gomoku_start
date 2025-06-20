@@ -622,7 +622,7 @@ class ParallelHighQualityMCTSEngine:
     """并行高质量MCTS引擎"""
     
     def __init__(self, total_iterations=3000, max_time=8.0, c_param=1.414, num_processes=None):
-        self.total_iterations = total_iterations*2*(mp.cpu_count()//2)*5
+        self.total_iterations = total_iterations*2*(mp.cpu_count()//2)
         self.max_time = max_time+10
         self.c_param = c_param
         self.evaluator = AdvancedPatternEvaluator()
@@ -1115,7 +1115,7 @@ class ParallelHighQualityMCTSEngine:
     def _is_early_game(self, board):
         """判断是否为开局"""
         piece_count = sum(1 for i in range(15) for j in range(15) if board[i][j] != 0)
-        return piece_count <= 6
+        return piece_count <= 3
     
     def _get_opening_move(self, board, player):
         """获取开局移动"""

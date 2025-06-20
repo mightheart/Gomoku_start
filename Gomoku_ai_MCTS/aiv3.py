@@ -1194,29 +1194,42 @@ class MCTSAIPlayer(GomokuAI):
         self.thinking = True
         try:
             print("并行高质量MCTS AI开始思考...")
-            
-            # 转换棋盘表示
-            converted_board = self.convert_board(board, player_side)
-            
+
+            # 如果AI执黑棋，反转棋盘和身份，让AI以白棋身份思考
+            if player_side == PLAYER_BLACK:
+                # 反转棋盘：黑变白，白变黑
+                fake_board = []
+                for row in board:
+                    fake_row = []
+                    for cell in row:
+                        if cell == PIECE_BLACK:
+                            fake_row.append(PIECE_WHITE)
+                        elif cell == PIECE_WHITE:
+                            fake_row.append(PIECE_BLACK)
+                        else:
+                            fake_row.append(PIECE_EMPTY)
+                    fake_board.append(fake_row)
+                fake_player_side = PLAYER_WHITE
+                converted_board = self.convert_board(fake_board, fake_player_side)
+                player = -1  # 让AI以“白棋”身份思考
+            else:
+                converted_board = self.convert_board(board, player_side)
+                player = 1 if player_side == PLAYER_BLACK else -1
+
             # 重新创建引擎实例以确保参数正确
             self.engine = ParallelHighQualityMCTSEngine(
                 self.iterations, self.max_time, 1.414, self.num_processes
             )
-            
+
             # 空棋盘处理
             if all(cell == 0 for row in converted_board for cell in row):
                 center = board_size // 2
                 return center, center
-            
-            # 确定玩家标识
-            player = 1 if player_side == PLAYER_BLACK else -1
-            
-            # 执行并行MCTS搜索
+
             row, col = self.engine.get_next_move(converted_board, player)
-            
             print(f"并行MCTS AI计算结果: ({row}, {col})")
             return row, col
-            
+
         except Exception as e:
             print(f"并行MCTS AI计算出错: {e}")
             import traceback

@@ -27,6 +27,7 @@ class MousePicker:
         self.picker_node = CollisionNode('mouseRay')
         self.picker_np = self.camera.attachNewNode(self.picker_node)
         self.picker_node.setFromCollideMask(BitMask32.bit(1))
+        self.picker_node.setIntoCollideMask(BitMask32.allOff())  # 关键：禁止作为into对象
         
         self.picker_ray = CollisionRay()
         self.picker_node.addSolid(self.picker_ray)

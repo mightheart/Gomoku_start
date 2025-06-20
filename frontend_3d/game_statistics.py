@@ -181,7 +181,7 @@ class GameStatistics:
             seconds = int(seconds % 60)
             return f"{minutes:02d}:{seconds:02d}"
         
-        stats = f"📊 Game Statistics 📊\n"
+        stats = f" Game Statistics \n"
         stats += f"Total Time: {format_time(game_duration)}\n"
         stats += f"Total Moves: {self.move_count}\n"
         stats += f"Black Time: {format_time(self.player_black_total_time)}\n"

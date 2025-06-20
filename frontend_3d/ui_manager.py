@@ -164,10 +164,10 @@ class UIManager:
     def show_game_over(self, winner, is_ai_win, final_stats):
         """显示游戏结束界面"""
         if is_ai_win:
-            victory_text = f"😔 Game Over! AI ({winner}) Wins!"
+            victory_text = f" Game Over! AI ({winner}) Wins!"
             text_color = UI_COLOR_RED
         else:
-            victory_text = f"🎉 Congratulations! {winner} Wins!"
+            victory_text = f" Congratulations! {winner} Wins!"
             text_color = UI_COLOR_GREEN
         
         combined_text = victory_text + "\n\n" + final_stats + "\nPress B to go back to the world" + "\nPress R to Restart"

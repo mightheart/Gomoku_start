@@ -424,7 +424,7 @@ class Gomoku_Start(ShowBase):
         
         # 重置游戏状态
         self.chessboard = ChessBoard(size=BOARD_SIZE)
-        self.current_player = self.player_side
+        self.current_player = PLAYER_BLACK  # 黑棋总是先手
         self.game_over = False
         self.white_pieces_count = MAX_PIECES_PER_PLAYER
         self.black_pieces_count = MAX_PIECES_PER_PLAYER
@@ -444,6 +444,10 @@ class Gomoku_Start(ShowBase):
         
         # 重新开始背景音乐
         self.audio_manager.play_current_bgm()
+    
+        # 如果玩家是白棋，则AI先走
+        if self.player_side == PLAYER_WHITE:
+            self.taskMgr.doMethodLater(0.5, self._delayed_ai_move, 'ai-first-move')
     
     def undo_move(self):
         """悔棋"""

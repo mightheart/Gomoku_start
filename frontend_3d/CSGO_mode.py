@@ -158,9 +158,9 @@ class CSGOCameraDemo:
 
     def check_gomoku_area(self, task):
         cam_pos = self.base.camera.getPos()
-        gomoku_center_1 = Vec3(-50, 0, 0)
+        gomoku_center_1 = Vec3(-42, 0, 0)
         gomoku_center_2 = Vec3(0, 0, 0)
-        gomoku_center_3 = Vec3(50, 0, 0)
+        gomoku_center_3 = Vec3(42, 0, 0)
         # 棋盘中心点
         radius = 20
         near_board = None

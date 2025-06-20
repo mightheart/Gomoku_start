@@ -290,9 +290,9 @@ class Gomoku_Start(ShowBase):
     def _get_rotation_center_by_ai_type(self, ai_type, board_y):
         """根据AI类型获取旋转中心"""
         if ai_type == "minimax":
-            return (0, -100, 0)
+            return (0, board_y, 0)
         elif ai_type == "mcts":
-            return (0, -200, 0)
+            return (0, board_y, 0)
         else:  # classical
             return (0, board_y, 0)
     

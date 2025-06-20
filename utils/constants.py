@@ -92,9 +92,9 @@ THICKNESS_POSITION_OFFSET = (0, 0, -0.21)  # 默认位置偏移 (X, Y, Z)
 OPPONENT_MODEL_PATH_RAIDEN = "models/Raiden shogun.bam"  # 雷电将军模型路径
 OPPONENT_MODEL_PATH_LULU = "models/lulu.bam"  # 水豚噜噜模型路径
 OPPONENT_MODEL_PATH_PIKA = "models/pikaqiu.bam"  # 皮卡丘模型路径
-OPPONENT_MODEL_POSITION_RAIDEN = (0,20,-5)  # 默认位置 (X, Y, Z)
-OPPONENT_MODEL_POSITION_LULU = (0,20,5)  # 默认位置 (X, Y, Z)
-OPPONENT_MODEL_POSITION_PIKA = (0,20,-5)  # 默认位置 (X, Y, Z)
+OPPONENT_MODEL_POSITION_RAIDEN = (0,20,-5)  # 雷电将军默认位置 (X, Y, Z)
+OPPONENT_MODEL_POSITION_LULU = (0,20,5)  # 水豚噜噜默认位置 (X, Y, Z)
+OPPONENT_MODEL_POSITION_PIKA = (0,20,-5)  # 皮卡丘默认位置 (X, Y, Z)
 OPPONENT_MODEL_SCALE = (15,15,15)  # 默认缩放比例 (X, Y, Z)
 OPPONENT_MODEL_ROTATION = (0, 0, 0)  # 默认旋转角度 (X, Y, Z)
 

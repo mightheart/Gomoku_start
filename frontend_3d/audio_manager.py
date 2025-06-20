@@ -26,6 +26,8 @@ class AudioManager:
         self.bgm_list = []
         self.current_bgm_index = 0
         self.current_bgm = None
+        self.bgm_shuffle_order = []  # 新增：打乱后的播放顺序
+        self.bgm_is_shuffled = False  # 新增：是否已经打乱顺序
 
         # Nahita语音 (classical AI)
         self.nahita_voices = []
@@ -46,6 +48,10 @@ class AudioManager:
 
         self._init_random_seed()
         self._load_all_audio()
+        
+        # 自动开始播放BGM
+        if self.bgm_list:
+            self.play_current_bgm()
     
     def set_ai_type(self, ai_type):
         """设置当前AI类型，用于确定语音包"""
@@ -275,49 +281,203 @@ class AudioManager:
             self.loser_music.setVolume(SOUND_VOLUME-0.1)
             self.loser_music.play()
     
+    def _load_bgm(self):
+        """加载背景音乐"""
+        print(f"开始加载BGM，总数: {len(BGM_LIST)}")
+        loaded_count = 0
+        
+        for i, bgm_path in enumerate(BGM_LIST):
+            if os.path.exists(bgm_path):
+                try:
+                    bgm = self.loader.loadMusic(bgm_path)
+                    if bgm:
+                        self.bgm_list.append(bgm)
+                        loaded_count += 1
+                        filename = os.path.basename(bgm_path)
+                        print(f"成功加载BGM [{loaded_count}]: {filename}")
+                    else:
+                        print(f"加载BGM失败(返回None): {bgm_path}")
+                except Exception as e:
+                    print(f"加载BGM异常: {bgm_path}, 错误: {e}")
+            else:
+                print(f"BGM文件不存在: {bgm_path}")
+        
+        print(f"BGM加载完成，成功加载 {loaded_count}/{len(BGM_LIST)} 首")
+        
+        # 初始化播放顺序
+        if self.bgm_list:
+            self._initialize_bgm_order()
+    
+    def _initialize_bgm_order(self):
+        """初始化BGM播放顺序 - 随机开始，然后顺序播放"""
+        if not self.bgm_list:
+            return
+        
+        # 随机选择一个开始位置
+        start_index = random.randint(0, len(self.bgm_list) - 1)
+        
+        # 创建播放顺序：从随机位置开始，然后是剩余的按顺序
+        self.bgm_shuffle_order = []
+        
+        # 从随机位置开始到末尾
+        for i in range(start_index, len(self.bgm_list)):
+            self.bgm_shuffle_order.append(i)
+        
+        # 然后从头开始到随机位置之前
+        for i in range(0, start_index):
+            self.bgm_shuffle_order.append(i)
+        
+        self.current_bgm_index = 0  # 在shuffle_order中的索引
+        self.bgm_is_shuffled = True
+        
+        print(f"BGM播放顺序初始化完成:")
+        print(f"随机起始位置: {start_index}")
+        print(f"播放顺序: {self.bgm_shuffle_order}")
+        
+        # 显示播放列表
+        for i, bgm_index in enumerate(self.bgm_shuffle_order):
+            filename = os.path.basename(BGM_LIST[bgm_index])
+            marker = " <- 当前" if i == 0 else ""
+            print(f"  {i+1}. {filename}{marker}")
+    
     def play_current_bgm(self):
         """播放当前背景音乐"""
+        # 移除旧的切歌任务
         self.task_mgr.remove('bgm-switch-task')
-        if self.bgm_list and 0 <= self.current_bgm_index < len(self.bgm_list):
-            if self.current_bgm:
-                self.current_bgm.stop()
-            
-            self.current_bgm = self.bgm_list[self.current_bgm_index]
-            self.current_bgm.setVolume(SOUND_VOLUME)
-            self.current_bgm.play()
-            
-            try:
-                duration = self.current_bgm.length()
-                if duration > 0:
-                    self.task_mgr.doMethodLater(duration, self._switch_to_next_bgm, 'bgm-switch-task')
-                else:
-                    self.task_mgr.doMethodLater(180, self._switch_to_next_bgm, 'bgm-switch-task')
-            except:
+        
+        if not self.bgm_list:
+            print("没有可用的BGM")
+            return
+        
+        if not self.bgm_is_shuffled:
+            self._initialize_bgm_order()
+        
+        # 停止当前播放的BGM
+        if self.current_bgm:
+            self.current_bgm.stop()
+        
+        # 获取真实的BGM索引
+        real_bgm_index = self.bgm_shuffle_order[self.current_bgm_index]
+        self.current_bgm = self.bgm_list[real_bgm_index]
+        
+        # 播放BGM
+        self.current_bgm.setVolume(SOUND_VOLUME)
+        self.current_bgm.play()
+        
+        # 显示当前播放信息
+        filename = os.path.basename(BGM_LIST[real_bgm_index])
+        print(f"正在播放BGM [{self.current_bgm_index + 1}/{len(self.bgm_shuffle_order)}]: {filename}")
+        
+        # 设置自动切换到下一首
+        try:
+            duration = self.current_bgm.length()
+            if duration > 0:
+                print(f"BGM时长: {duration:.1f}秒")
+                self.task_mgr.doMethodLater(duration, self._switch_to_next_bgm, 'bgm-switch-task')
+            else:
+                print("无法获取BGM时长，使用默认180秒")
                 self.task_mgr.doMethodLater(180, self._switch_to_next_bgm, 'bgm-switch-task')
+        except Exception as e:
+            print(f"设置BGM切换任务失败: {e}，使用默认180秒")
+            self.task_mgr.doMethodLater(180, self._switch_to_next_bgm, 'bgm-switch-task')
     
     def _switch_to_next_bgm(self, task):
         """切换到下一首背景音乐"""
-        if self.bgm_list:
-            self.current_bgm_index = (self.current_bgm_index + 1) % len(self.bgm_list)
-            self.play_current_bgm()
+        if not self.bgm_list or not self.bgm_is_shuffled:
+            return task.done
+        
+        # 移动到下一首
+        self.current_bgm_index = (self.current_bgm_index + 1) % len(self.bgm_shuffle_order)
+        
+        # 如果循环完一轮，重新洗牌
+        if self.current_bgm_index == 0:
+            print("一轮播放完毕，重新初始化播放顺序")
+            self._initialize_bgm_order()
+        
+        # 播放下一首
+        self.play_current_bgm()
         return task.done
+    
+    def skip_to_next_bgm(self):
+        """手动跳转到下一首BGM"""
+        if not self.bgm_list:
+            print("没有可用的BGM")
+            return
+        
+        print("手动跳转到下一首BGM")
+        self._switch_to_next_bgm(None)
+    
+    def skip_to_previous_bgm(self):
+        """手动跳转到上一首BGM"""
+        if not self.bgm_list or not self.bgm_is_shuffled:
+            print("没有可用的BGM或未初始化")
+            return
+        
+        # 移动到上一首
+        self.current_bgm_index = (self.current_bgm_index - 1) % len(self.bgm_shuffle_order)
+        print("手动跳转到上一首BGM")
+        self.play_current_bgm()
+    
+    def get_current_bgm_info(self):
+        """获取当前BGM信息"""
+        if not self.bgm_list or not self.bgm_is_shuffled:
+            return "无BGM"
+        
+        real_bgm_index = self.bgm_shuffle_order[self.current_bgm_index]
+        filename = os.path.basename(BGM_LIST[real_bgm_index])
+        return f"[{self.current_bgm_index + 1}/{len(self.bgm_shuffle_order)}] {filename}"
+    
+    def get_bgm_playlist(self):
+        """获取当前播放列表"""
+        if not self.bgm_list or not self.bgm_is_shuffled:
+            return []
+        
+        playlist = []
+        for i, bgm_index in enumerate(self.bgm_shuffle_order):
+            filename = os.path.basename(BGM_LIST[bgm_index])
+            is_current = (i == self.current_bgm_index)
+            playlist.append({
+                'index': i + 1,
+                'filename': filename,
+                'is_current': is_current,
+                'real_index': bgm_index
+            })
+        
+        return playlist
     
     def stop_bgm(self):
         """停止背景音乐"""
+        self.task_mgr.remove('bgm-switch-task')  # 移除切歌任务
         if self.current_bgm:
             self.current_bgm.stop()
+            print("BGM已停止")
     
     def stop_all_music(self):
         """停止所有音乐，包括背景音乐和胜利/失败音乐"""
-        #移除旧的切歌任务
+        # 移除旧的切歌任务
         self.task_mgr.remove('bgm-switch-task')
+        
         if self.current_bgm:
             self.current_bgm.stop()
         if self.winner_music:
             self.winner_music.stop()
         if self.loser_music:
             self.loser_music.stop()
+        
+        print("所有音乐已停止")
     
+    def resume_bgm_after_game(self):
+        """游戏结束后恢复BGM播放"""
+        print("恢复BGM播放")
+        if self.bgm_list:
+            # 延迟一段时间后开始播放，避免与游戏结束音效冲突
+            self.task_mgr.doMethodLater(3.0, self._delayed_resume_bgm, 'resume-bgm-task')
+    
+    def _delayed_resume_bgm(self, task):
+        """延迟恢复BGM播放"""
+        self.play_current_bgm()
+        return task.done
+
     def _init_random_seed(self):
         """初始化随机种子"""
         random.seed(int(time.time() * 1000000) % 2**32)
@@ -349,17 +509,6 @@ class AudioManager:
             
         except Exception as e:
             print(f"加载音频文件时出错: {e}")
-    
-    def _load_bgm(self):
-        """加载背景音乐"""
-        for bgm_path in BGM_LIST:
-            if os.path.exists(bgm_path):
-                try:
-                    bgm = self.loader.loadMusic(bgm_path)
-                    if bgm:
-                        self.bgm_list.append(bgm)
-                except Exception as e:
-                    print(f"加载背景音乐失败: {bgm_path}, 错误: {e}")
     
     def _load_nahita_voices(self):
         """加载Nahita语音文件"""

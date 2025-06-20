@@ -123,9 +123,22 @@ FALLBACK_SKY_LIGHTOFF = 1
 # 音频常量
 SOUND_CLICK = "sound/place_piece.mp3"  # 落子
 SOUND_DRAG = "sound/drag_piece.mp3"    # 提子
-BGM_LIST = [ "sound/bgm3.mp3", 
-            "sound/bgm2.wav", 
-            "sound/bgm4.flac", "sound/bgm5.flac"]  # BGM列表
+BGM_LIST = [
+                "sound/bgm/bgm_toho_0.aac",
+                "sound/bgm/bgm_rimworld_7.mp3",
+                "sound/bgm/bgm_rimworld_6.mp3",
+                "sound/bgm/bgm_rimworld_5.mp3",
+                "sound/bgm/bgm_rimworld_4.mp3",
+                "sound/bgm/bgm_rimworld_3.mp3",
+                "sound/bgm/bgm_rimworld_2.mp3",
+                "sound/bgm/bgm_rimworld_1.mp3",
+                "sound/bgm/bgm_rimworld_0.mp3",
+                "sound/bgm/bgm_genshin_4.aac",
+                "sound/bgm/bgm_genshin_3.aac",
+                "sound/bgm/bgm_genshin_2.aac",
+                "sound/bgm/bgm_genshin_1.flac",
+                "sound/bgm/bgm_genshin_0.flac"
+            ]  # BGM列表
 NAHITA_VOICE = [
                 "sound/nahita/欢迎，终于来了.wav",
                 "sound/nahita/欢迎，一起来下棋吗.wav",

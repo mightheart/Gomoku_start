@@ -621,16 +621,16 @@ def _count_connections(board, row, col, player):
 class ParallelHighQualityMCTSEngine:
     """并行高质量MCTS引擎"""
     
-    def __init__(self, total_iterations=3000, max_time=8.0, c_param=1.414, num_processes=None):
-        self.total_iterations = total_iterations*2*(mp.cpu_count()//2)
-        self.max_time = max_time+10
+    def __init__(self, total_iterations=3000, max_time=10.0, c_param=1.414, num_processes=None):
+        self.total_iterations = int(9000*(mp.cpu_count()/1.5))
+        self.max_time = max_time
         self.c_param = c_param
         self.evaluator = AdvancedPatternEvaluator()
         self.currentI = 0
         self.currentJ = 0
         
         # 并行化参数
-        self.num_processes = num_processes or max(1, (mp.cpu_count()//2))
+        self.num_processes = num_processes or max(1, int(mp.cpu_count()//1.5))
         self.pool_manager = ProcessPoolManager()
         
         # 高质量参数
@@ -929,12 +929,15 @@ class ParallelHighQualityMCTSEngine:
                 root_copy = copy.deepcopy(root)
                 root_copy.node_id = f"root_{i}"
                 
+                simulation_params_local = copy.deepcopy(simulation_params)
+                simulation_params_local['max_depth'] += i
+                param_c = self.c_param + 0.05 * i
                 task_args = (
                     root_copy.to_dict(),
                     ai_player,
                     process_iterations,
-                    self.c_param,
-                    simulation_params
+                    param_c,
+                    simulation_params_local
                 )
                 tasks.append(task_args)
         

@@ -267,10 +267,11 @@ class Gomoku_Start(ShowBase):
     
     def _init_managers(self):
         """初始化所有管理器"""
-        self.audio_manager = AudioManager(self.loader, self.taskMgr)
-        self.ui_manager = UIManager(self)
-        self.statistics = GameStatistics(self.audio_manager)
-        self.effects_manager = EffectsManager(self.render, self.taskMgr)
+        self.audio_manager = AudioManager(self.loader, self.taskMgr)  # 初始化音频管理器
+        self.audio_manager.set_ai_type(self.ai_type) # 向音頻管理器傳遞AI类型
+        self.ui_manager = UIManager(self) # 初始化UI管理器
+        self.statistics = GameStatistics(self.audio_manager) # 初始化游戏统计管理器
+        self.effects_manager = EffectsManager(self.render, self.taskMgr) # 初始化特效管理器
         
         # 根据AI类型确定旋转中心
         rotation_center = self._get_rotation_center_by_ai_type(self.ai_type, self.board_y)
@@ -509,11 +510,11 @@ class Gomoku_Start(ShowBase):
                        (winner == "Black" and self.player_side == PLAYER_BLACK)
         
         if is_player_win:
-            self.audio_manager.play_tinyun_voice(identifier="玩家胜利", volume=1)
+            self.audio_manager.play_ai_voice(identifier="玩家胜利", volume=1)
             self.audio_manager.play_winner_sound()
             print("玩家获胜！")
         else:
-            self.audio_manager.play_tinyun_voice(identifier="玩家失败", volume=1)
+            self.audio_manager.play_ai_voice(identifier="玩家失败", volume=1)
             self.audio_manager.play_loser_sound()
             print("AI获胜！")
         

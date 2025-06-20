@@ -37,7 +37,7 @@ class GameStatistics:
     def _play_voice(self, voice_type, volume=1):
         """播放语音并更新冷却时间"""
         if self.audio_manager and self._can_play_voice():
-            self.audio_manager.play_tinyun_voice(voice_type, volume=1)
+            self.audio_manager.play_ai_voice(voice_type, volume=volume)
             self._last_voice_time = time.time()
             return True
         return False

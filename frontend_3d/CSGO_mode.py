@@ -175,19 +175,26 @@ class CSGOCameraDemo:
         if near_board:
             if not self.in_gomoku_area:
                 self.in_gomoku_area = True
-                if near_board ==1:
+                if near_board == 1:
                     self.hint_text = OnscreenText(
                     f"Press space to challenge classical AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    if not self._welcome_voice_played:
+                        self._play_welcome_voice(ai_type="classical")
+                        self._welcome_voice_played = True
                 elif near_board == 2:
                     self.hint_text = OnscreenText(
                     f"Press space to challenge minimax AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    if not self._welcome_voice_played:
+                        self._play_welcome_voice(ai_type="minimax")
+                        self._welcome_voice_played = True
                 elif near_board == 3:
                     self.hint_text = OnscreenText(
                     f"Press space to challenge MCTS AI", pos=(0, 0.8), scale=0.1, fg=(1,1,0,1), parent=self.base.aspect2d)
+                    if not self._welcome_voice_played:
+                        self._play_welcome_voice(ai_type="mcts")
+                        self._welcome_voice_played = True
                 self.base.accept("space", lambda: self._start_gomoku(near_board))
-                if not self._welcome_voice_played:
-                    self._play_welcome_voice()
-                    self._welcome_voice_played = True
+
         else:
             if self.in_gomoku_area:
                 self.in_gomoku_area = False
@@ -234,11 +241,11 @@ class CSGOCameraDemo:
                 ]
             )
 
-    def _play_welcome_voice(self):
+    def _play_welcome_voice(self, ai_type="minimax"):
         """播放欢迎语音"""
         if hasattr(self, 'audio_manager') and self.audio_manager:
             print("播放首次接近棋盘的欢迎语音")
-            result = self.audio_manager.play_tinyun_voice("欢迎", volume=1)
+            result = self.audio_manager.play_ai_voice("欢迎", volume=1, ai_type=ai_type)
             print(f"欢迎语音播放结果: {result}")
 
     def cleanup(self):

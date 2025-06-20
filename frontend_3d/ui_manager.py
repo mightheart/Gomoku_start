@@ -27,11 +27,15 @@ class UIManager:
     
     def _setup_control_ui(self):
         """设置控制提示UI"""
-        # 标题
-        self.title = OnscreenText(
-            text="Gomoku Game",
-            style=1, fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1),
-            pos=(0.8, -0.95), scale=.07)
+        try:
+            # 标题
+            self.title = OnscreenText(
+                text="Gomoku Game",
+                style=1, fg=(1, 1, 1, 1), shadow=(0, 0, 0, 1),
+                pos=(0.8, -0.95), scale=.07)
+        except Exception as e:
+            print(f"創建提示UI失敗: {e}")
+            self.title = None
         
         # 控制提示
         controls = [
@@ -47,18 +51,25 @@ class UIManager:
         ]
         
         for text, pos in controls:
-            element = OnscreenText(
-                text=text, parent=self.base.a2dTopLeft,
-                style=1, fg=(1, 1, 1, 1), pos=pos,
-                align=TextNode.ALeft, scale=.05)
-            self.hideable_ui_elements.append(element)
-            element.hide()  # 初始隐藏
-        
-        # Tab提示
-        self.tab_hint = OnscreenText(
-            text="Press TAB to show controls and stats",
-            parent=self.base.a2dBottomLeft, align=TextNode.ALeft,
-            style=1, fg=(0.8, 0.8, 0.8, 1), pos=(0.06, 0.1), scale=.04)
+            try:
+                element = OnscreenText(
+                    text=text, parent=self.base.a2dTopLeft,
+                    style=1, fg=(1, 1, 1, 1), pos=pos,
+                    align=TextNode.ALeft, scale=.05)
+                self.hideable_ui_elements.append(element)
+                element.hide()  # 初始隐藏
+            except Exception as e:
+                print(f"創建控制文本 '{text}' 失敗: {e}")
+
+        # Tab提示 - 添加异常处理
+        try:
+            self.tab_hint = OnscreenText(
+                text="Press TAB to show controls and stats",
+                parent=self.base.a2dBottomLeft, align=TextNode.ALeft,
+                style=1, fg=(0.8, 0.8, 0.8, 1), pos=(0.06, 0.1), scale=.04)
+        except Exception as e:
+            print(f"創建Tab菜單失敗: {e}")
+            self.tab_hint = None
     
     def _setup_function_ui(self):
         """设置功能UI"""
@@ -101,10 +112,11 @@ class UIManager:
                 element.show() if self.ui_visible else element.hide()
         
         # 更新Tab提示
-        if self.ui_visible:
-            self.tab_hint.setText("Press TAB to hide controls and stats")
-        else:
-            self.tab_hint.setText("Press TAB to show controls and stats")
+        if self.tab_hint:  # 先检查当前是否存在Tab菜单
+            if self.ui_visible:
+                self.tab_hint.setText("Press TAB to hide controls and stats")
+            else:
+                self.tab_hint.setText("Press TAB to show controls and stats")
     
     def update_statistics(self, game_data):
         """更新统计信息"""
